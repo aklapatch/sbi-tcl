@@ -5,7 +5,7 @@ set sbi_dir [file normalize [file join ~ .sbi]]
 set src_dir [file join $sbi_dir srcs]
 set build_dir [file join $sbi_dir build]
 set inst_dir [file join $sbi_dir installed]
-set rep_dir [file join $sbi_dir recipies]
+set rep_dir [file join $sbi_dir recipes]
 file mkdir $src_dir
 file mkdir $build_dir
 file mkdir $rep_dir
@@ -37,33 +37,50 @@ for {set i 0} {$i < $argc} {incr i} {
 	}
 }
 
-if {[string length $import_rep] > 0} {
-	# TODO: Change import name to reflect package name + version
-	file copy $import_rep $rep_dir
-}
-
-if {[string length $rem_rep] > 0} {
-	# TODO: Change import name to reflect package name + version
-	set exp_dir [file join $inst_dir $rem_rep]
-	if {[file isdirectory $exp_dir]} {
-		puts "Removing $rem_rep"
-		file delete -force -- $exp_dir
-	} else {
-		error "Package $rem_rep not found!"
-	}
-}
-
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
 	return [file join $inst_dir $pkg_name_ver]
 }
 
+if {[string length $import_rep] > 0} {
+	# TODO: Change import name to reflect package name + version
+	source $import_rep
+	set short_name "[dict get $rep_info name]-[dict get $rep_info ver]"
+	set rep_dest [file join $rep_dir $short_name.tcl]
+	file copy -force $import_rep $rep_dest
+}
+
+if {[string length $rem_rep] > 0} {
+	# TODO: Change import name to reflect package name + version
+	if {[string compare $rem_rep "all"] == 0} {
+		# Delete everything
+		set all_folders [glob -directory $inst_dir *]
+		foreach folder $all_folders {
+			puts "Deleting $folder"
+			file delete -force -- $folder
+		}
+	} else {
+		set exp_dir [file join $inst_dir $rem_rep]
+		if {[file isdirectory $exp_dir]} {
+			puts "Removing $rem_rep"
+			file delete -force -- $exp_dir
+		} else {
+			error "Package $rem_rep not found!"
+		}
+	}
+}
+
+
 proc build_recipe {rep_path} {
 	global rep_dir
 	set import_path [file join $rep_dir ${rep_path}.tcl]
 	if {[file isfile $import_path]} {
+		puts "Sourcing imported recipe $import_path"
 		source $import_path
 	} else {
+		if {[file isfile $rep_path] == 0} {
+			error "$rep_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
+		}
 		# Build the recipe
 		source $rep_path
 	}
@@ -72,6 +89,7 @@ proc build_recipe {rep_path} {
 	dict for {k v} $rep_info {
 		puts "    - $k=$v"
 	}
+	puts "\n"
 	set short_name "[dict get $rep_info name]-[dict get $rep_info ver]"
 	global inst_dir
 	set exp_path [file join $inst_dir $short_name]
@@ -79,7 +97,6 @@ proc build_recipe {rep_path} {
 		puts "$short_name is installed, skipping build"
 		return
 	}
-	puts "\n"
 	set srcs [dict get $rep_info srcs]
 	global src_dir
 	foreach src $srcs {
@@ -117,8 +134,6 @@ proc build_recipe {rep_path} {
 			if {[file isdirectory $need_inst_dir] == 0} {
 				build_recipe $need
 			}
-			set need_link [file join $tmp_build_dir $need]
-			file link $need_link $need_inst_dir
 		}
 	}
 	# This needs to go after other recipies are built, otherwise the variables could
@@ -137,8 +152,8 @@ proc build_recipe {rep_path} {
 
 	# Install it.
 	exec >&@stdout make install
+	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
-
 }
 
 if {[string length $build_rep] > 0} {
