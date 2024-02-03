@@ -88,10 +88,6 @@ proc build_recipe {rep_path} {
 	}
 
 	# Exctrace source to build dir
-	global build_dir
-	set tmp_build_dir [file join $build_dir $short_name]
-	file delete -force -- $tmp_build_dir
-	file mkdir $tmp_build_dir
 	foreach src $srcs {
 		set src_name [file tail $src]
 		set save_path [file join $src_dir $src_name]
@@ -124,13 +120,14 @@ proc build_recipe {rep_path} {
 		puts "Using cfg flags $cfg_flags"
 	}
 	# TODO: logging
-	exec >&@stdout ./configure $cfg_flags --prefix=$pkg_inst_dir
+	exec >&@stdout ./configure {*}$cfg_flags --prefix=$pkg_inst_dir
 
 	# Make it
 	exec >&@stdout make
 
 	# Install it.
 	exec >&@stdout make install
+	file delete -force -- $tmp_build_dir
 
 }
 
