@@ -53,6 +53,11 @@ if {[string length $rem_rep] > 0} {
 	}
 }
 
+proc get_pkg_dir {pkg_name_ver} {
+	global inst_dir
+	return [file join $inst_dir $pkg_name_ver]
+}
+
 proc build_recipe {rep_path} {
 	global rep_dir
 	set import_path [file join $rep_dir ${rep_path}.tcl]
@@ -86,6 +91,11 @@ proc build_recipe {rep_path} {
 			puts "Downloaded $src_name to $save_path"
 		}
 	}
+
+	global build_dir
+	set tmp_build_dir [file join $build_dir $short_name]
+	file delete -force -- $tmp_build_dir
+	file mkdir $tmp_build_dir
 
 	# Exctrace source to build dir
 	foreach src $srcs {
