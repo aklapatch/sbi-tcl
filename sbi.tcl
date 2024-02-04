@@ -17,6 +17,7 @@ proc p_usage {} {
 set import_rep ""
 set build_rep ""
 set rem_rep ""
+set rebuild 0
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
@@ -24,6 +25,11 @@ for {set i 0} {$i < $argc} {incr i} {
 		--build {
 			incr i
 			set build_rep [lindex $argv $i]
+		}
+		--rebuild {
+			incr i
+			set build_rep [lindex $argv $i]
+			set rebuild 1
 		}
 		--import {
 			incr i
@@ -70,8 +76,39 @@ if {[string length $rem_rep] > 0} {
 	}
 }
 
+proc exec_log_cmd {cmd log_path} {
+	set cmd_log [open $log_path w+]
+	puts "Logging '$cmd' to $log_path"
+	if {[catch {exec >&@$cmd_log {*}$cmd} ex_res]} {
+		flush $cmd_log
+		# Get the last 50 lines of the file
+		set seek_off -1
+		set newlines_seen 0
+		set log_exc ""
+		while {$newlines_seen < 30} {
+			seek $cmd_log $seek_off end
+			set char [read $cmd_log 1]
+			set log_exc "${char}$log_exc"
+			if {[string compare $char "\n"] == 0} {
+				incr newlines_seen
+			}
+			# Bail if we've hit the end of the file
+			set f_i [tell $cmd_log]
+			if {$f_i == 1} {
+				break
+			}
+			incr seek_off -1
+		}
+		close $cmd_log
+		error "Command '$cmd' failed. A Log excerpt follows:\n$log_exc"
 
-proc build_recipe {rep_path} {
+	}
+	flush $cmd_log
+	close $cmd_log
+}
+
+
+proc build_recipe {rep_path {rebuild 0}} {
 	global rep_dir
 	set import_path [file join $rep_dir ${rep_path}.tcl]
 	if {[file isfile $import_path]} {
@@ -93,7 +130,7 @@ proc build_recipe {rep_path} {
 	set short_name "[dict get $rep_info name]-[dict get $rep_info ver]"
 	global inst_dir
 	set exp_path [file join $inst_dir $short_name]
-	if {[file isdirectory $exp_path]} {
+	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
 		return
 	}
@@ -142,20 +179,33 @@ proc build_recipe {rep_path} {
 	set cfg_flags ""
 	if {[dict exists $rep_info cfg_flags]} {
 		set cfg_flags [dict get $rep_info cfg_flags]
-		puts "Using cfg flags $cfg_flags"
+		puts "Using cfg flags '$cfg_flags'"
 	}
 	# TODO: logging
-	exec >&@stdout ./configure {*}$cfg_flags --prefix=$pkg_inst_dir
+	set cfg_log [file join $tmp_build_dir cfg-log.txt]
+	set cfg_cmd "./configure $cfg_flags --prefix=$pkg_inst_dir"
+	exec_log_cmd $cfg_cmd $cfg_log
 
+	set make_flags ""
+	if {[dict exists $rep_info make_flags]} {
+		set make_flags " [dict get $rep_info make_flags]"
+		puts "Using make flags '$make_flags'"
+	}
 	# Make it
-	exec >&@stdout make
+	set make_log [file join $tmp_build_dir make-log.txt]
+	exec_log_cmd "make$make_flags" $make_log
+
+	# TODO: move an existing install folder to a tmpdir, then delete it if the install fails.
 
 	# Install it.
-	exec >&@stdout make install
+	set install_log [file join $tmp_build_dir install-log.txt]
+	exec_log_cmd "make install" $install_log
 	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
+
+	puts "\nInstalled $short_name"
 }
 
 if {[string length $build_rep] > 0} {
-	build_recipe $build_rep
+	build_recipe $build_rep $rebuild
 }
