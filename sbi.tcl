@@ -181,9 +181,11 @@ proc build_recipe {rep_path {rebuild 0}} {
 		set cfg_flags [dict get $rep_info cfg_flags]
 		puts "Using cfg flags '$cfg_flags'"
 	}
-	# TODO: logging
 	set cfg_log [file join $tmp_build_dir cfg-log.txt]
 	set cfg_cmd "./configure $cfg_flags --prefix=$pkg_inst_dir"
+	if {[dict exists $rep_info cfg_fn]} {
+		set cfg_cmd [dict get $rep_info cfg_fn]
+	}
 	exec_log_cmd $cfg_cmd $cfg_log
 
 	set make_flags ""
