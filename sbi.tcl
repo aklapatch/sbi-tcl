@@ -1,6 +1,5 @@
 #!/usr/bin/env tclsh
 
-
 set sbi_dir [file normalize [file join ~ .sbi]]
 set src_dir [file join $sbi_dir srcs]
 set build_dir [file join $sbi_dir build]
@@ -140,8 +139,9 @@ proc build_recipe {rep_path {rebuild 0}} {
 		set src_name [file tail $src]
 		set save_path [file join $src_dir $src_name]
 		if {[file exists $save_path] == 0} {
-			puts "Downloading $src_name to $save_path"
-			exec >&stdout curl -o $save_path $src
+			puts "Downloading $src_name ($src) to $save_path"
+			# TODO: use http package instead of curl
+			exec >&@stdout curl -o $save_path $src
 			puts "Downloaded $src_name to $save_path"
 		}
 	}
@@ -150,6 +150,17 @@ proc build_recipe {rep_path {rebuild 0}} {
 	set tmp_build_dir [file join $build_dir $short_name]
 	file delete -force -- $tmp_build_dir
 	file mkdir $tmp_build_dir
+
+	# Build needed libraries
+	if {[dict exists $rep_info build_needs]} {
+		set b_needs [dict get $rep_info build_needs]
+		foreach need $b_needs {
+			set need_inst_dir [file join $inst_dir $need]
+			if {[file isdirectory $need_inst_dir] == 0} {
+				build_recipe $need
+			}
+		}
+	}
 
 	# Exctrace source to build dir
 	foreach src $srcs {
@@ -163,30 +174,28 @@ proc build_recipe {rep_path {rebuild 0}} {
 	global inst_dir
 	set pkg_inst_dir [file join $inst_dir $short_name]
 	file delete -force -- $pkg_inst_dir
-	set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
-	if {[dict exists $rep_info build_needs]} {
-		set b_needs [dict get $rep_info build_needs]
-		foreach need $b_needs {
-			set need_inst_dir [file join $inst_dir $need]
-			if {[file isdirectory $need_inst_dir] == 0} {
-				build_recipe $need
-			}
+	if {[dict exists $rep_info cfg_proc]} {
+		cd $tmp_build_dir
+		set proc_name [dict get $rep_info cfg_proc]
+		# Run the cofiguration proc
+		# This proc should end in the dir where 'make' should be run
+		# It will start in the temporary build folder
+		puts "Running custom build function $proc_name"
+		{*}$proc_name $short_name $pkg_inst_dir
+	} else {
+		set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
+		# This needs to go after other recipies are built, otherwise the variables could
+		# carry into function calls that they didn't apply to.
+		cd $cfg_dir
+		set cfg_flags ""
+		if {[dict exists $rep_info cfg_flags]} {
+			set cfg_flags [dict get $rep_info cfg_flags]
+			puts "Using cfg flags '$cfg_flags'"
 		}
+		set cfg_log [file join $tmp_build_dir cfg-log.txt]
+		set cfg_cmd "./configure $cfg_flags --prefix=$pkg_inst_dir"
+		exec_log_cmd $cfg_cmd $cfg_log
 	}
-	# This needs to go after other recipies are built, otherwise the variables could
-	# carry into function calls that they didn't apply to.
-	cd $cfg_dir
-	set cfg_flags ""
-	if {[dict exists $rep_info cfg_flags]} {
-		set cfg_flags [dict get $rep_info cfg_flags]
-		puts "Using cfg flags '$cfg_flags'"
-	}
-	set cfg_log [file join $tmp_build_dir cfg-log.txt]
-	set cfg_cmd "./configure $cfg_flags --prefix=$pkg_inst_dir"
-	if {[dict exists $rep_info cfg_fn]} {
-		set cfg_cmd [dict get $rep_info cfg_fn]
-	}
-	exec_log_cmd $cfg_cmd $cfg_log
 
 	set make_flags ""
 	if {[dict exists $rep_info make_flags]} {
