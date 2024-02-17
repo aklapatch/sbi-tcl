@@ -18,6 +18,9 @@ set build_rep ""
 set rem_rep ""
 set del_rep ""
 set rebuild 0
+set rebuild_deps 0
+
+# TODO: Make args take multiple entries
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
@@ -25,6 +28,9 @@ for {set i 0} {$i < $argc} {incr i} {
 		--build {
 			incr i
 			set build_rep [lindex $argv $i]
+		}
+		--rebuild-deps {
+			set rebuild_deps 1
 		}
 		--rebuild {
 			incr i
@@ -134,7 +140,7 @@ proc exec_log_cmd {cmd log_path} {
 }
 
 
-proc build_recipe {rep_path {rebuild 0}} {
+proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	global rep_dir
 	set import_path [file join $rep_dir ${rep_path}.tcl]
 	if {[file isfile $import_path]} {
@@ -185,6 +191,8 @@ proc build_recipe {rep_path {rebuild 0}} {
 			set need_inst_dir [file join $inst_dir $need]
 			if {[file isdirectory $need_inst_dir] == 0} {
 				build_recipe $need
+			} elseif {$rebuild_deps} {
+				build_recipe $need 1 1
 			}
 		}
 	}
@@ -259,5 +267,5 @@ proc build_recipe {rep_path {rebuild 0}} {
 }
 
 if {[string length $build_rep] > 0} {
-	build_recipe $build_rep $rebuild
+	build_recipe $build_rep $rebuild $rebuild_deps
 }

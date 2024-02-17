@@ -10,5 +10,5 @@ set rep_info [dict create \
 	cd_dest "$name-$ver" \
 	make_flags "-j 4" \
 	build_needs {host-gmp-5.0.1 host-mpfr-4.0.0} \
-	cfg_flags "--with-gmp=$gmp_dir --with-mpfr=$mpfr_dir" \
+	cfg_flags "--disable-shared --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir" \
 ]
