@@ -210,17 +210,31 @@ proc build_recipe {rep_path {rebuild 0}} {
 		puts "Running custom build function $proc_name"
 		{*}$proc_name $short_name $pkg_inst_dir $tmp_build_dir
 	} else {
+		set cfg_prefix "."
 		set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
+		if {[dict exists $rep_info cfg_type]} {
+			set cfg_type [dict get $rep_info cfg_type]
+			if {[string compare $cfg_type "at-new-dir"] == 0} {
+				set new_cfg_dir [file join $tmp_build_dir "$short_name-build"]
+				file mkdir $new_cfg_dir
+				cd $new_cfg_dir
+				set cfg_prefix "../[dict get $rep_info cd_dest]"
+			
+			} else {
+				error "Bad configuration type '$cfg_type'!"
+			}
+		} else {
+			cd $cfg_dir
+		}
 		# This needs to go after other recipies are built, otherwise the variables could
 		# carry into function calls that they didn't apply to.
-		cd $cfg_dir
 		set cfg_flags ""
 		if {[dict exists $rep_info cfg_flags]} {
 			set cfg_flags [dict get $rep_info cfg_flags]
 			puts "Using cfg flags '$cfg_flags'"
 		}
 		set cfg_log [file join $tmp_build_dir cfg-log.txt]
-		set cfg_cmd "./configure $cfg_flags --prefix=$pkg_inst_dir"
+		set cfg_cmd "$cfg_prefix/configure $cfg_flags --prefix=$pkg_inst_dir"
 		exec_log_cmd $cfg_cmd $cfg_log
 	}
 
