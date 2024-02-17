@@ -16,6 +16,7 @@ proc p_usage {} {
 set import_rep ""
 set build_rep ""
 set rem_rep ""
+set del_rep ""
 set rebuild 0
 
 for {set i 0} {$i < $argc} {incr i} {
@@ -34,6 +35,10 @@ for {set i 0} {$i < $argc} {incr i} {
 			incr i
 			set import_rep [lindex $argv $i]
 		}
+		--delete {
+			incr i
+			set del_rep [lindex $argv $i]
+		}
 		--remove {
 			incr i
 			set rem_rep [lindex $argv $i]
@@ -47,10 +52,24 @@ proc get_pkg_dir {pkg_name_ver} {
 	return [file join $inst_dir $pkg_name_ver]
 }
 
+if {[string length $del_rep] > 0} {
+	if {[string compare $del_rep "all"] == 0} {
+		set all_reps [glob -directory $rep_dir *.tcl]
+		foreach rep $all_reps {
+			puts "Deleting $rep"
+			file delete $rep
+		}
+	} else {
+		set del_rep_path [file join $rep_dir $del_rep.tcl]
+		puts "Deleting $del_rep at $del_rep_path"
+		file delete $del_rep_path
+	}
+}
+
 if {[string length $import_rep] > 0} {
 	# TODO: Change import name to reflect package name + version
 	source $import_rep
-	set short_name "[dict get $rep_info name]-[dict get $rep_info ver]"
+	set short_name "[dict get $rep_info plat]-[dict get $rep_info name]-[dict get $rep_info ver]"
 	set rep_dest [file join $rep_dir $short_name.tcl]
 	file copy -force $import_rep $rep_dest
 }
@@ -81,10 +100,18 @@ proc exec_log_cmd {cmd log_path} {
 	if {[catch {exec >&@$cmd_log {*}$cmd} ex_res]} {
 		flush $cmd_log
 		# Get the last 50 lines of the file
+		seek $cmd_log 0 end
+		set f_sz [tell $cmd_log]
+		if {$f_sz == 0} {
+			close $cmd_log
+			error "Command '$cmd' failed. The log was empty"
+		}
+
 		set seek_off -1
 		set newlines_seen 0
 		set log_exc ""
 		while {$newlines_seen < 30} {
+			puts "seek_off=$seek_off"
 			seek $cmd_log $seek_off end
 			set char [read $cmd_log 1]
 			set log_exc "${char}$log_exc"
@@ -126,7 +153,7 @@ proc build_recipe {rep_path {rebuild 0}} {
 		puts "    - $k=$v"
 	}
 	puts "\n"
-	set short_name "[dict get $rep_info name]-[dict get $rep_info ver]"
+	set short_name "[dict get $rep_info plat]-[dict get $rep_info name]-[dict get $rep_info ver]"
 	global inst_dir
 	set exp_path [file join $inst_dir $short_name]
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
@@ -181,7 +208,7 @@ proc build_recipe {rep_path {rebuild 0}} {
 		# This proc should end in the dir where 'make' should be run
 		# It will start in the temporary build folder
 		puts "Running custom build function $proc_name"
-		{*}$proc_name $short_name $pkg_inst_dir
+		{*}$proc_name $short_name $pkg_inst_dir $tmp_build_dir
 	} else {
 		set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
 		# This needs to go after other recipies are built, otherwise the variables could
