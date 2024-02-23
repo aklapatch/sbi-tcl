@@ -13,28 +13,44 @@ proc p_usage {} {
 	puts "$argv0 usage: \[--build] \[--import] <recipe-path>"
 }
 
-set import_rep ""
-set build_rep ""
-set rem_rep ""
-set del_rep ""
+set import_reps {}
+set build_reps {}
+set rem_reps {} 
+set del_reps {}
 set rebuild 0
 set rebuild_deps 0
 
 # TODO: Make args take multiple entries
+proc get_arg_list {arg_list start_i} {
+	# Go until we hit an argument without -- starting it.
+	# Return everything until that point
+	set ret_l {}
+	set arg_list_len [llength $arg_list]
+	for {set i $start_i} {$i < $arg_list_len} {incr i} {
+		set cmp_arg [lindex $arg_list $i]
+		if {[string match "--*" $cmp_arg] == 1} {
+			# We've found another argument. Stop here.
+			break
+		}
+		lappend ret_l $cmp_arg
+	}
+	return $ret_l
+}
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
 	switch $arg {
 		--build {
 			incr i
-			set build_rep [lindex $argv $i]
+			set build_reps [get_arg_list $argv $i]
+			puts "$build_reps"
+			incr i [llength $build_reps]
+			incr i -1
 		}
 		--rebuild-deps {
 			set rebuild_deps 1
 		}
 		--rebuild {
-			incr i
-			set build_rep [lindex $argv $i]
 			set rebuild 1
 		}
 		--import {
@@ -58,8 +74,8 @@ proc get_pkg_dir {pkg_name_ver} {
 	return [file join $inst_dir $pkg_name_ver]
 }
 
-if {[string length $del_rep] > 0} {
-	if {[string compare $del_rep "all"] == 0} {
+if {[string length $del_reps] > 0} {
+	if {[string compare $del_reps "all"] == 0} {
 		set all_reps [glob -directory $rep_dir *.tcl]
 		foreach rep $all_reps {
 			puts "Deleting $rep"
@@ -72,15 +88,19 @@ if {[string length $del_rep] > 0} {
 	}
 }
 
-if {[string length $import_rep] > 0} {
-	# TODO: Change import name to reflect package name + version
-	source $import_rep
+proc import_rep_file {f_import} {
+	source $f_import
 	set short_name "[dict get $rep_info plat]-[dict get $rep_info name]-[dict get $rep_info ver]"
+	global rep_dir
 	set rep_dest [file join $rep_dir $short_name.tcl]
-	file copy -force $import_rep $rep_dest
+	file copy -force $f_import $rep_dest
 }
 
-if {[string length $rem_rep] > 0} {
+if {[string length $import_reps] > 0} {
+	import_rep_file $import_rep
+}
+
+if {[string length $rem_reps] > 0} {
 	# TODO: Change import name to reflect package name + version
 	if {[string compare $rem_rep "all"] == 0} {
 		# Delete everything
@@ -265,6 +285,10 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	puts "\nInstalled $short_name"
 }
 
-if {[string length $build_rep] > 0} {
-	build_recipe $build_rep $rebuild $rebuild_deps
+if {[llength $build_reps] > 0} {
+	puts "Recipes to build $build_reps"
+	foreach b_rep $build_reps {
+		puts "Building $b_rep"
+		build_recipe $b_rep $rebuild $rebuild_deps
+	}
 }
