@@ -9,6 +9,9 @@ file mkdir $src_dir
 file mkdir $build_dir
 file mkdir $rep_dir
 
+# This script cd's around, so we need to record where we started when sourcing multiple files.
+set start_dir [pwd]
+
 proc p_usage {} {
 	puts "$argv0 usage: \[--build] \[--import] <recipe-path>"
 }
@@ -96,8 +99,10 @@ proc import_rep_file {f_import} {
 	file copy -force $f_import $rep_dest
 }
 
-if {[string length $import_reps] > 0} {
-	import_rep_file $import_rep
+if {[llength $import_reps] > 0} {
+	foreach rep $import_reps {
+		import_rep_file $rep
+	}
 }
 
 if {[string length $rem_reps] > 0} {
@@ -286,8 +291,24 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 }
 
 if {[llength $build_reps] > 0} {
-	puts "Recipes to build $build_reps"
+	puts "Recipes to build: $build_reps"
+	# Import the recipes first in case they depend on each other.
+	set abs_build_reps {}
 	foreach b_rep $build_reps {
+		if {[file isfile $b_rep]} {
+			# Only import the file if it's a file, not a recipe
+			puts "Importing $b_rep"
+			import_rep_file $b_rep
+
+			# Normalize all the paths for recipe files.
+			# This script cds around, so we need to do that otherwise
+			# we'll lose track of the files.
+			lappend abs_build_reps [file normalize $b_rep]
+		} else {
+			lappend abs_build_reps $b_rep
+		}
+	}
+	foreach b_rep $abs_build_reps {
 		puts "Building $b_rep"
 		build_recipe $b_rep $rebuild $rebuild_deps
 	}
