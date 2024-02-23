@@ -117,7 +117,6 @@ proc exec_log_cmd {cmd log_path} {
 		set newlines_seen 0
 		set log_exc ""
 		while {$newlines_seen < 30} {
-			puts "seek_off=$seek_off"
 			seek $cmd_log $seek_off end
 			set char [read $cmd_log 1]
 			set log_exc "${char}$log_exc"
