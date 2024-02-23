@@ -105,22 +105,23 @@ if {[llength $import_reps] > 0} {
 	}
 }
 
-if {[string length $rem_reps] > 0} {
-	# TODO: Change import name to reflect package name + version
-	if {[string compare $rem_rep "all"] == 0} {
-		# Delete everything
-		set all_folders [glob -directory $inst_dir *]
-		foreach folder $all_folders {
-			puts "Deleting $folder"
-			file delete -force -- $folder
-		}
-	} else {
-		set exp_dir [file join $inst_dir $rem_rep]
-		if {[file isdirectory $exp_dir]} {
-			puts "Removing $rem_rep"
-			file delete -force -- $exp_dir
+if {[llength $rem_reps] > 0} {
+	foreach r_rep $rem_reps {
+		if {[string compare $r_rep "all"] == 0} {
+			# Delete everything
+			set all_folders [glob -directory $inst_dir *]
+			foreach folder $all_folders {
+				puts "Deleting $folder"
+				file delete -force -- $folder
+			}
 		} else {
-			error "Package $rem_rep not found!"
+			set exp_dir [file join $inst_dir $r_rep]
+			if {[file isdirectory $exp_dir]} {
+				puts "Removing $r_rep"
+				file delete -force -- $exp_dir
+			} else {
+				error "Package $r_rep not found!"
+			}
 		}
 	}
 }
