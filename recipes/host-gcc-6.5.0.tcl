@@ -11,8 +11,8 @@ set rep_info [dict create \
 	ver  $ver \
 	srcs "$url/$name/$name-$ver/$name-$ver.tar.gz" \
 	build_needs "host-isl-0.15 host-gmp-4.3.2 host-mpc-0.8.1 host-mpfr-2.4.2" \
-	make_flags "-j 3" \
+	make_flags "-j 2" \
 	cd_dest $name-$ver \
-	cfg_flags "--with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-multilib --with-mpc=$mpc_dir" \
+	cfg_flags "CFLAGS=-pipe --with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-multilib --with-mpc=$mpc_dir" \
 	cfg_type "at-new-dir" \
 ]
