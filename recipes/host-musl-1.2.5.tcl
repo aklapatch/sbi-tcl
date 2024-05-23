@@ -6,6 +6,6 @@ set rep_info [dict create \
 	ver  $ver \
 	srcs "https://musl.libc.org/releases/$name-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
-	cfg_flags "--enable-optimize --disable-shared" \
+	cfg_flags  " --disable-shared" \
 	make_flags "-j 4" \
 ]
