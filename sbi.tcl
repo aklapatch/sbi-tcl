@@ -9,7 +9,7 @@ file mkdir $src_dir
 file mkdir $build_dir
 file mkdir $rep_dir
 
-# This script cd's around, so we need to record where we started when sourcing multiple files.
+# This script cds around, so we need to record where we started when sourcing multiple files.
 set start_dir [pwd]
 
 proc p_usage {} {
