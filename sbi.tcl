@@ -198,8 +198,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		set save_path [file join $src_dir $src_name]
 		if {[file exists $save_path] == 0} {
 			puts "Downloading $src_name ($src) to $save_path"
-			# TODO: use http package instead of curl
-			exec >&@stdout curl -o $save_path $src
+			exec >&@stdout wget -O $save_path $src
 			puts "Downloaded $src_name to $save_path"
 		}
 	}
