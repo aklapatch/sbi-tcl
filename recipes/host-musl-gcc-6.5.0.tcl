@@ -15,6 +15,6 @@ set rep_info [dict create \
 	build_needs "host-isl-0.15 host-gmp-4.3.2 host-mpc-0.8.1 host-mpfr-2.4.2" \
 	make_flags "-j 3" \
 	cd_dest $name-$ver \
-	cfg_flags "\"CFLAGS=-pipe -g0\" \"CXXFLAGS=-pipe -g0\" --target=$arch-pc-linux-musl --host=$arch-pc-linux-musl --build=$arch-pc-linux-musl --with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-libsanitizer --disable-libgomp --disable-bootstrap --disable-multilib --with-mpc=$mpc_dir" \
+	cfg_flags "\"CFLAGS=-pipe -g0\" \"CXXFLAGS=-pipe -g0\" --disable-host-shared --disable-libquadmath --target=$arch-pc-linux-musl --host=$arch-pc-linux-musl --build=$arch-pc-linux-musl --with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-libsanitizer --disable-libgomp --disable-multilib --with-mpc=$mpc_dir --enable-languages=c,c++,lto --enable-lto" \
 	cfg_type "at-new-dir" \
 ]
