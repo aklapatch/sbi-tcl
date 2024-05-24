@@ -6,5 +6,5 @@ set rep_info [dict create \
 	ver  $ver \
 	srcs "https://ftp.gnu.org/gnu/ncurses/$name-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
-	make_flags "-j 1" \
+	make_flags "-j 2" \
 ]
