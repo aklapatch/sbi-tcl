@@ -1,14 +1,5 @@
 #!/usr/bin/env tclsh
 
-set sbi_dir [file normalize [file join ~ .sbi]]
-set src_dir [file join $sbi_dir srcs]
-set build_dir [file join $sbi_dir build]
-set inst_dir [file join $sbi_dir installed]
-set rep_dir [file join $sbi_dir recipes]
-file mkdir $src_dir
-file mkdir $build_dir
-file mkdir $rep_dir
-
 # This script cds around, so we need to record where we started when sourcing multiple files.
 set start_dir [pwd]
 
@@ -40,6 +31,8 @@ proc get_arg_list {arg_list start_i} {
 	return $ret_l
 }
 
+set sbi_dir [file normalize [file join ~ .sbi]]
+
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
 	switch $arg {
@@ -49,6 +42,13 @@ for {set i 0} {$i < $argc} {incr i} {
 			incr i [llength $build_reps]
 			incr i -1
 		}
+        --sbi-dir {
+            # Changes the folder where sbi stores installed packages and recipes
+			incr i
+			set sbi_dir [lindex $argv $i]
+            set sbi_dir [file normalize $sbi_dir]
+            puts "Setting the SBI storage folder to $sbi_dir"
+        }
 		--rebuild-deps {
 			set rebuild_deps 1
 		}
@@ -77,6 +77,14 @@ for {set i 0} {$i < $argc} {incr i} {
 	}
 }
 
+set src_dir [file join $sbi_dir srcs]
+set build_dir [file join $sbi_dir build]
+set inst_dir [file join $sbi_dir installed]
+set rep_dir [file join $sbi_dir recipes]
+file mkdir $src_dir
+file mkdir $build_dir
+file mkdir $rep_dir
+
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
 	return [file join $inst_dir $pkg_name_ver]
@@ -84,15 +92,15 @@ proc get_pkg_dir {pkg_name_ver} {
 
 if {[llength $del_reps] > 0} {
     foreach rep $del_reps {
-        if {[string compare $del_reps "all"] == 0} {
+        if {[string compare $rep "all"] == 0} {
             set all_reps [glob -directory $rep_dir *.tcl]
                 foreach rep $all_reps {
                     puts "Deleting $rep"
                     file delete $rep
                 }
         } else {
-            set del_rep_path [file join $rep_dir $del_rep.tcl]
-            puts "Deleting $del_rep at $del_rep_path"
+            set del_rep_path [file join $rep_dir $rep.tcl]
+            puts "Deleting $rep at $del_rep_path"
             file delete $del_rep_path
         }
     }

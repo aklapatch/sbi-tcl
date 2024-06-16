@@ -6,5 +6,6 @@ set rep_info [dict create \
 	ver  $ver \
 	srcs "https://github.com/libevent/libevent/releases/download/release-$ver-stable/libevent-$ver-stable.tar.gz" \
 	cd_dest "$name-$ver-stable" \
+    cfg_flags "--disable-openssl"\
 	make_flags "-j 2" \
 ]
