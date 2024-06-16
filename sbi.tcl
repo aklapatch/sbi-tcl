@@ -46,7 +46,6 @@ for {set i 0} {$i < $argc} {incr i} {
 		--build {
 			incr i
 			set build_reps [get_arg_list $argv $i]
-			puts "$build_reps"
 			incr i [llength $build_reps]
 			incr i -1
 		}
@@ -58,15 +57,21 @@ for {set i 0} {$i < $argc} {incr i} {
 		}
 		--import {
 			incr i
-			set import_rep [lindex $argv $i]
+			set import_reps [get_arg_list $argv $i]
+			incr i [llength $import_reps]
+			incr i -1
 		}
 		--delete {
 			incr i
-			set del_rep [lindex $argv $i]
+			set del_reps [get_arg_list $argv $i]
+			incr i [llength $del_reps]
+			incr i -1
 		}
 		--remove {
 			incr i
-			set rem_rep [lindex $argv $i]
+			set rem_reps [get_arg_list $argv $i]
+			incr i [llength $rem_reps]
+			incr i -1
 		}
 		default { error "Unrecognized arg $arg!" }
 	}
@@ -77,18 +82,20 @@ proc get_pkg_dir {pkg_name_ver} {
 	return [file join $inst_dir $pkg_name_ver]
 }
 
-if {[string length $del_reps] > 0} {
-	if {[string compare $del_reps "all"] == 0} {
-		set all_reps [glob -directory $rep_dir *.tcl]
-		foreach rep $all_reps {
-			puts "Deleting $rep"
-			file delete $rep
-		}
-	} else {
-		set del_rep_path [file join $rep_dir $del_rep.tcl]
-		puts "Deleting $del_rep at $del_rep_path"
-		file delete $del_rep_path
-	}
+if {[llength $del_reps] > 0} {
+    foreach rep $del_reps {
+        if {[string compare $del_reps "all"] == 0} {
+            set all_reps [glob -directory $rep_dir *.tcl]
+                foreach rep $all_reps {
+                    puts "Deleting $rep"
+                    file delete $rep
+                }
+        } else {
+            set del_rep_path [file join $rep_dir $del_rep.tcl]
+            puts "Deleting $del_rep at $del_rep_path"
+            file delete $del_rep_path
+        }
+    }
 }
 
 proc import_rep_file {f_import} {
@@ -267,6 +274,10 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		}
 		set cfg_log [file join $tmp_build_dir cfg-log.txt]
 		set cfg_cmd "$cfg_prefix/configure $cfg_flags --prefix=$pkg_inst_dir"
+        if {[dict exists $rep_info cfg_cmd]} {
+            set new_cfg_cmd [dict get $rep_info cfg_cmd]
+            set cfg_cmd "$cfg_prefix/$new_cfg_cmd $cfg_flags --prefix=$pkg_inst_dir"
+        }
 		exec_log_cmd $cfg_cmd $cfg_log
 	}
 
