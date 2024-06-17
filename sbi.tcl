@@ -32,6 +32,7 @@ proc get_arg_list {arg_list start_i} {
 }
 
 set sbi_dir [file normalize [file join ~ .sbi]]
+set rm_old_builds 0
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
@@ -61,6 +62,9 @@ for {set i 0} {$i < $argc} {incr i} {
 			incr i [llength $import_reps]
 			incr i -1
 		}
+        --rm-old-builds {
+			set rm_old_builds 1
+        }
 		--delete {
 			incr i
 			set del_reps [get_arg_list $argv $i]
@@ -88,6 +92,13 @@ file mkdir $rep_dir
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
 	return [file join $inst_dir $pkg_name_ver]
+}
+
+if {$rm_old_builds > 0} {
+    foreach b_dir [glob -directory $build_dir *] {
+        puts "Deleting $b_dir"
+        file delete -force -- $b_dir
+    }
 }
 
 if {[llength $del_reps] > 0} {
