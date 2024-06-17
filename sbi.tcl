@@ -67,7 +67,7 @@ for {set i 0} {$i < $argc} {incr i} {
 			incr i [llength $del_reps]
 			incr i -1
 		}
-		--remove {
+		--uninstall {
 			incr i
 			set rem_reps [get_arg_list $argv $i]
 			incr i [llength $rem_reps]

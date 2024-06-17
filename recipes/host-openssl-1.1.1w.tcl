@@ -1,5 +1,7 @@
 set ver 1.1.1w
 set name openssl
+# TODO: This package needs linux-headers for alpine linux. Make a package for those
+# headers based on the alpine linux package.
 set rep_info [dict create \
 	plat host \
 	name $name \
@@ -7,8 +9,6 @@ set rep_info [dict create \
 	srcs "https://www.openssl.org/source/old/1.1.1/$name-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
     cfg_cmd "config" \
-    # TODO: This package needs linux-headers for alpine linux. Make a package for those
-    # headers based on the alpine linux package.
     cfg_flags "\
     no-shared \
     no-zlib \
