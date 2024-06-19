@@ -7,6 +7,6 @@ set rep_info [dict create \
 	ver  $ver \
 	srcs "https://ftp.gnu.org/gnu/$name/$name-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
-	make_flags "-j 4" \
+	make_flags "-j 3" \
 	cfg_flags "CFLAGS=-pipe" \
 ]
