@@ -128,6 +128,7 @@ proc import_rep_file {f_import} {
 if {[llength $import_reps] > 0} {
 	foreach rep $import_reps {
 		import_rep_file $rep
+        puts "Imported $rep"
 	}
 }
 
