@@ -258,6 +258,14 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		exec >&@stdout tar -xf $save_path -C $tmp_build_dir
 	}
 
+    # Add a member to the PATH if necessary
+    set old_path $::env(PATH)
+    if {[dict exists $rep_info paths]} {
+        set path_add [dict get $rep_info paths]
+        puts "Adding '$path_add' to your PATH"
+        set ::env(PATH) "$::env(PATH):$path_add"
+    }
+
 	# Configure the build
 	global inst_dir
 	set pkg_inst_dir [file join $inst_dir $short_name]
@@ -317,6 +325,9 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	# Install it.
 	set install_log [file join $tmp_build_dir install-log.txt]
 	exec_log_cmd "make install" $install_log
+
+    # Reset the path for the next build
+    set env(PATH) $old_path
 	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
 
