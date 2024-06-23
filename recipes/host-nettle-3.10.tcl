@@ -12,5 +12,5 @@ set rep_info [dict create \
 	srcs "https://ftp.gnu.org/gnu/nettle/nettle-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "CFLAGS=-pipe CPPFLAGS=-pipe --with-lib-path=$gmp_dir/lib --with-include-path=$gmp_dir/include " \
+	cfg_flags "CFLAGS=-pipe CPPFLAGS=-pipe --enable-fat --enable-shared --enable-static --disable-openssl --with-lib-path=$gmp_dir/lib --with-include-path=$gmp_dir/include " \
 ]

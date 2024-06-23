@@ -263,7 +263,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
     if {[dict exists $rep_info paths]} {
         set path_add [dict get $rep_info paths]
         puts "Adding '$path_add' to your PATH"
-        set ::env(PATH) "$::env(PATH):$path_add"
+        set ::env(PATH) "$path_add:$::env(PATH)"
     }
 
 	# Configure the build

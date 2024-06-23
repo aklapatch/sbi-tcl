@@ -15,6 +15,6 @@ set rep_info [dict create \
 	srcs "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$ver.tar.xz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "CFLAGS=-pipe CPPFLAGS=-pipe PKG_CONFIG_PATH=$guile_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig GMP_CFLAGS=-I$gmp_dir/include --enable-static GMP_LIBS=-L$gmp_dir/lib --enable-static --with-included-libtasn1 --with-included-unistring --without-p11-kit" \
+	cfg_flags "\"CFLAGS=-pipe -I$gmp_dir/include\" LDFLAGS=-L$gmp_dir/lib \"CPPFLAGS=-pipe -I$gmp_dir/include\" PKG_CONFIG_PATH=$guile_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig --enable-static --enable-shared --with-included-libtasn1 --with-included-unistring --without-p11-kit --disable-openssl-compatibility --disable-ktls" \
     paths "$guile_dir/bin"
 ]
