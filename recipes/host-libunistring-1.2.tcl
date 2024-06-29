@@ -8,5 +8,5 @@ set rep_info [dict create \
 	srcs "https://ftp.gnu.org/gnu/$name/$name-$ver.tar.gz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "CFLAGS=-pipe" \
+	cfg_flags "--with-pic" \
 ]

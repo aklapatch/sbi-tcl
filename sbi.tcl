@@ -269,9 +269,13 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	# Configure the build
 	global inst_dir
 	set pkg_inst_dir [file join $inst_dir $short_name]
-	file delete -force -- $pkg_inst_dir
+    cd $tmp_build_dir
+    if {[dict exists $rep_info pre_cfg_proc]} {
+        set _pre_cfg_proc [dict get $rep_info pre_cfg_proc]
+		puts "Running custom pre-config function $_pre_cfg_proc"
+		{*}$_pre_cfg_proc $short_name $pkg_inst_dir $tmp_build_dir
+    }
 	if {[dict exists $rep_info cfg_proc]} {
-		cd $tmp_build_dir
 		set proc_name [dict get $rep_info cfg_proc]
 		# Run the cofiguration proc
 		# This proc should end in the dir where 'make' should be run

@@ -14,6 +14,11 @@ set gnutls_dir [get_pkg_dir $gnutls]
 set gmp "$plat-gmp-6.3.0"
 set gmp_dir [get_pkg_dir $gmp]
 
+proc pre_cfg_proc {pkg_name inst_dir build_dir} {
+    set pre_log [file join $build_dir pre-cfg-log.txt]
+    cd guile-v4.0.0
+    exec_log_cmd "./bootstrap" $pre_log
+}
 
 set ::env(PKG_CONFIG_PATH) "$guile_dir/lib/pkgconfig"
 # Add gmp to guile flags because it needs them
@@ -25,9 +30,12 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
     build_needs "$guile $gnutls $nettle $unistr $ffi" \
-    srcs "https://gitlab.com/-/project/40217954/uploads/9060bc55069cedb40ab46cea49b439c0/guile-gnutls-$ver.tar.gz"\
+    srcs "https://gitlab.com/gnutls/guile/-/archive/v4.0.0/guile-v4.0.0.tar.gz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "PKG_CONFIG_PATH=$gnutls_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig:$guile_dir/lib/pkgconfig CFLAGS=-Wno-deprecated \"GUILE_LIBS=$guile_l_flags\" --disable-shared --disable-srp-authentication" \
+    cd_dest "guile-v4.0.0" \
+	cfg_flags "PKG_CONFIG_PATH=$gnutls_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig:$guile_dir/lib/pkgconfig CFLAGS=-Wno-deprecated \"GUILE_LIBS=$guile_l_flags\" --enable-static --disable-srp-authentication" \
+    pre_cfg_proc pre_cfg_proc \
     paths "$guile_dir/bin" \
 ]
+	#cfg_flags "PKG_CONFIG_PATH=$gnutls_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig:$guile_dir/lib/pkgconfig CFLAGS=-Wno-deprecated \"GUILE_LIBS=$guile_l_flags\" --disable-shared --disable-srp-authentication" \

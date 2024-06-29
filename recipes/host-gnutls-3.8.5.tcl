@@ -11,10 +11,10 @@ set rep_info [dict create \
 	plat $plat \
 	name $name \
 	ver  $ver \
-    build_needs "$guile $nettle $gmp" \
+    build_needs "$guile $nettle" \
 	srcs "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-$ver.tar.xz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "\"CFLAGS=-pipe -I$gmp_dir/include\" LDFLAGS=-L$gmp_dir/lib \"CPPFLAGS=-pipe -I$gmp_dir/include\" PKG_CONFIG_PATH=$guile_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig --enable-static --enable-shared --with-included-libtasn1 --with-included-unistring --without-p11-kit --disable-openssl-compatibility --disable-ktls" \
+	cfg_flags "PKG_CONFIG_PATH=$guile_dir/lib/pkgconfig:$nettle_dir/lib/pkgconfig --with-pic --enable-static --enable-shared --with-included-libtasn1 --with-included-unistring --without-p11-kit --disable-openssl-compatibility --disable-ktls GMP_CFLAGS=-I$gmp_dir/include GMP_LIBS=-L$gmp_dir/lib" \
     paths "$guile_dir/bin"
 ]

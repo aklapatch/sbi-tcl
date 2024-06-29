@@ -17,5 +17,5 @@ set rep_info [dict create \
 	srcs "https://ftp.gnu.org/gnu/$name/$name-$ver.tar.xz" \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
-	cfg_flags "--disable-shared --enable-static PKG_CONFIG_PATH=$ffi_dir/lib/pkgconfig:$bdw_dir/lib/pkgconfig CFLAGS=-pipe CPPFLAGS=-pipe --with-libunistring-prefix=$unistring_dir --with-libgmp-prefix=$gmp_dir " \
+	cfg_flags "--disable-shared --enable-static --with-pic PKG_CONFIG_PATH=$ffi_dir/lib/pkgconfig:$bdw_dir/lib/pkgconfig CFLAGS=-pipe CPPFLAGS=-pipe --with-libunistring-prefix=$unistring_dir --with-libgmp-prefix=$gmp_dir " \
 ]
