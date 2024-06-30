@@ -21,5 +21,5 @@ set rep_info [dict create \
         no-ssl3 \
         no-seed \
         no-weak-ssl-ciphers" \
-	make_flags "-j 2" \
+	make_flags "-j 3" \
 ]

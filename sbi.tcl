@@ -4,7 +4,26 @@
 set start_dir [pwd]
 
 proc p_usage {} {
-	puts "$argv0 usage: \[--build] \[--import] <recipe-path>"
+	puts "$::argv0 usage:
+    --build  <recipe-path>
+        Builds a recipe and its not built dependencies
+    --import <recipe-path>
+        Imports a recipe for later use (like building another package)
+    --sbi-dir <dest-folder>
+        Changes the folder that sbi uses to build and install software to '<dest-folder>'
+    --rebuild-deps
+        Rebuild libraries that a package you're building needs (used with --build).
+        This can rebuild packages twice if a package is specified twice in the needs 
+        for needed recipies.
+    --rebuild
+        Rebuild the recipe you're building (used with --build)
+    --rm-old-builds
+        Delete the builds from the sbi build folder
+    --delete <recipe-name>
+        Delete imported recipie(s)
+    --uninstall <recipe-name>
+        Uninstall the installed files for <recipe-name>
+        "
 }
 
 set import_reps {}
@@ -37,6 +56,10 @@ set rm_old_builds 0
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
 	switch $arg {
+        -h - 
+        --help { 
+            p_usage
+        }
 		--build {
 			incr i
 			set build_reps [get_arg_list $argv $i]
