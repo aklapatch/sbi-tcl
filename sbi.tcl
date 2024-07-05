@@ -52,6 +52,7 @@ proc get_arg_list {arg_list start_i} {
 
 set sbi_dir [file normalize [file join ~ .sbi]]
 set rm_old_builds 0
+set do_check 0
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
@@ -59,6 +60,9 @@ for {set i 0} {$i < $argc} {incr i} {
         -h - 
         --help { 
             p_usage
+        }
+        --check { 
+            set do_check 1
         }
 		--build {
 			incr i
@@ -221,7 +225,7 @@ proc proc_exists {file name} {
     return [regexp "proc\\s+$name\\s+\{" $f_text]
 }
 
-proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
+proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	global rep_dir
 	set src_path [file join $rep_dir ${rep_path}.tcl]
 	if {[file isfile $src_path]} {
@@ -265,9 +269,9 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		foreach need $b_needs {
 			set need_inst_dir [file join $inst_dir $need]
 			if {[file isdirectory $need_inst_dir] == 0} {
-				build_recipe $need
+				build_recipe $need 0 0 $do_check
 			} elseif {$rebuild_deps} {
-				build_recipe $need 1 1
+				build_recipe $need 1 1 $do_check
 			}
 		}
 	}
@@ -305,7 +309,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
         puts "Running build{}"
         build [dict get $rep_info name] [dict get $rep_info ver] $inst_dir $tmp_build_dir
     }
-    if {$run_check} {
+    if {$run_check && $do_check} {
         puts "Running check{}"
         check $short_name $inst_dir $tmp_build_dir
     }
@@ -346,6 +350,6 @@ if {[llength $build_reps] > 0} {
 	}
 	foreach b_rep $abs_build_reps {
 		puts "Building $b_rep"
-		build_recipe $b_rep $rebuild $rebuild_deps
+		build_recipe $b_rep $rebuild $rebuild_deps $do_check
 	}
 }
