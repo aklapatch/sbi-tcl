@@ -288,6 +288,20 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
         puts "Adding '$path_add' to your PATH"
         set ::env(PATH) "$path_add:$::env(PATH)"
     }
+    # Add a member to the CFLAGS env if necessary
+    set old_cflags ""
+    if {[info exists ::env(CFLAGS)]} {
+        set old_cflags $::env(CFLAGS)
+    }
+    if {[dict exists $rep_info cflags]} {
+        set cflags_add [dict get $rep_info cflags]
+        puts "Adding '$cflags_add' to your CFLAGS"
+        if {[string length $old_cflags] == 0} {
+            set ::env(CFLAGS) "$cflags_add"
+        } else {
+            set ::env(CFLAGS) "$cflags_add:$old_cflags"
+        }
+    }
 
 	# Configure the build
 	global inst_dir
@@ -354,7 +368,11 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	exec_log_cmd "make install" $install_log
 
     # Reset the path for the next build
-    set env(PATH) $old_path
+    set ::env(PATH) $old_path
+
+    # Reset the flags for the next build
+    set ::env(CFLAGS) $old_cflags
+
 	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
 

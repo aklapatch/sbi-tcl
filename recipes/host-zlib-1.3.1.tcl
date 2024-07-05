@@ -9,4 +9,5 @@ set rep_info [dict create \
 	cd_dest "$name-$ver" \
 	make_flags "-j 3" \
 	cfg_flags "--static" \
+	cflags "-fPIC" \
 ]
