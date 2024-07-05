@@ -214,20 +214,26 @@ proc exec_log_cmd {cmd log_path} {
 	close $cmd_log
 }
 
+proc proc_exists {file name} {
+    set search_f [open $file r]
+    set f_text [read $search_f]
+    close $search_f
+    return [regexp "proc\\s+$name\\s+\{" $f_text]
+}
 
 proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	global rep_dir
-	set import_path [file join $rep_dir ${rep_path}.tcl]
-	if {[file isfile $import_path]} {
-		puts "Sourcing imported recipe $import_path"
-		source $import_path
+	set src_path [file join $rep_dir ${rep_path}.tcl]
+	if {[file isfile $src_path]} {
+		puts "Sourcing imported recipe $src_path"
 	} else {
-		if {[file isfile $rep_path] == 0} {
-			error "$rep_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
-		}
-		# Build the recipe
-		source $rep_path
+		set src_path $rep_path
 	}
+    if {[file isfile $src_path] == 0} {
+        error "$src_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
+    }
+    source $src_path
+
 	# Assume data is in rep_info 
 	puts "Recipie info:"
 	dict for {k v} $rep_info {
@@ -281,97 +287,38 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		exec >&@stdout tar -xf $save_path -C $tmp_build_dir
 	}
 
-    # Add a member to the PATH if necessary
-    set old_path $::env(PATH)
-    if {[dict exists $rep_info paths]} {
-        set path_add [dict get $rep_info paths]
-        puts "Adding '$path_add' to your PATH"
-        set ::env(PATH) "$path_add:$::env(PATH)"
-    }
-    # Add a member to the CFLAGS env if necessary
-    set old_cflags ""
-    if {[info exists ::env(CFLAGS)]} {
-        set old_cflags $::env(CFLAGS)
-    }
-    if {[dict exists $rep_info cflags]} {
-        set cflags_add [dict get $rep_info cflags]
-        puts "Adding '$cflags_add' to your CFLAGS"
-        if {[string length $old_cflags] == 0} {
-            set ::env(CFLAGS) "$cflags_add"
-        } else {
-            set ::env(CFLAGS) "$cflags_add:$old_cflags"
-        }
-    }
+    # Make sure the functions are up to date.
+    # sourcing other file could override them
+    source $src_path
+    set run_prep [proc_exists $src_path prepare]
+    set run_build [proc_exists $src_path build]
+    set run_install [proc_exists $src_path install]
+    set run_check [proc_exists $src_path check]
 
-	# Configure the build
-	global inst_dir
-	set pkg_inst_dir [file join $inst_dir $short_name]
+    set old_env [array get ::env]
     cd $tmp_build_dir
-    if {[dict exists $rep_info pre_cfg_proc]} {
-        set _pre_cfg_proc [dict get $rep_info pre_cfg_proc]
-		puts "Running custom pre-config function $_pre_cfg_proc"
-		{*}$_pre_cfg_proc $short_name $pkg_inst_dir $tmp_build_dir
+    if {$run_prep} {
+        puts "Running prepare{}"
+        prepare $pkg_name $inst_dir $tmp_build_dir
     }
-	if {[dict exists $rep_info cfg_proc]} {
-		set proc_name [dict get $rep_info cfg_proc]
-		# Run the cofiguration proc
-		# This proc should end in the dir where 'make' should be run
-		# It will start in the temporary build folder
-		puts "Running custom build function $proc_name"
-		{*}$proc_name $short_name $pkg_inst_dir $tmp_build_dir
-	} else {
-		set cfg_prefix "."
-		set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
-		if {[dict exists $rep_info cfg_type]} {
-			set cfg_type [dict get $rep_info cfg_type]
-			if {[string compare $cfg_type "at-new-dir"] == 0} {
-				set new_cfg_dir [file join $tmp_build_dir "$short_name-build"]
-				file mkdir $new_cfg_dir
-				cd $new_cfg_dir
-				set cfg_prefix "../[dict get $rep_info cd_dest]"
-			
-			} else {
-				error "Bad configuration type '$cfg_type'!"
-			}
-		} else {
-			cd $cfg_dir
-		}
-		# This needs to go after other recipies are built, otherwise the variables could
-		# carry into function calls that they didn't apply to.
-		set cfg_flags ""
-		if {[dict exists $rep_info cfg_flags]} {
-			set cfg_flags [dict get $rep_info cfg_flags]
-			puts "Using cfg flags '$cfg_flags'"
-		}
-		set cfg_log [file join $tmp_build_dir cfg-log.txt]
-		set cfg_cmd "$cfg_prefix/configure $cfg_flags --prefix=$pkg_inst_dir"
-        if {[dict exists $rep_info cfg_cmd]} {
-            set new_cfg_cmd [dict get $rep_info cfg_cmd]
-            set cfg_cmd "$cfg_prefix/$new_cfg_cmd $cfg_flags --prefix=$pkg_inst_dir"
-        }
-		exec_log_cmd $cfg_cmd $cfg_log
-	}
+    if {$run_build} {
+        puts "Running build{}"
+        build [dict get $rep_info name] [dict get $rep_info ver] $inst_dir $tmp_build_dir
+    }
+    if {$run_check} {
+        puts "Running check{}"
+        check $short_name $inst_dir $tmp_build_dir
+    }
+    if {$run_install} {
+        puts "Running install{}"
+        install $short_name $inst_dir $tmp_build_dir
+    }
+    set inst_files [glob -nocomplain [file join $inst_dir *]]
+    if {[llength $inst_files] == 0} {
+        error "This recipe didn't install any files!"
+    }
 
-	set make_flags ""
-	if {[dict exists $rep_info make_flags]} {
-		set make_flags " [dict get $rep_info make_flags]"
-		puts "Using make flags '$make_flags'"
-	}
-	# Make it
-	set make_log [file join $tmp_build_dir make-log.txt]
-	exec_log_cmd "make$make_flags" $make_log
-
-	# TODO: move an existing install folder to a tmpdir, then delete it if the install fails.
-
-	# Install it.
-	set install_log [file join $tmp_build_dir install-log.txt]
-	exec_log_cmd "make install" $install_log
-
-    # Reset the path for the next build
-    set ::env(PATH) $old_path
-
-    # Reset the flags for the next build
-    set ::env(CFLAGS) $old_cflags
+    array set ::env $old_env
 
 	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
