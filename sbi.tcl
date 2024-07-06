@@ -121,6 +121,16 @@ proc get_pkg_dir {pkg_name_ver} {
 	return [file join $inst_dir $pkg_name_ver]
 }
 
+proc exec_stdout {exec_str} {
+    exec >&@stdout {*}$exec_str
+}
+
+proc autotools_build {dir cfg_flags make_flags} {
+    cd $dir
+    exec_stdout "./configure $cfg_flags"
+    exec_stdout "make $make_flags"
+}
+
 if {$rm_old_builds > 0} {
     foreach b_dir [glob -directory $build_dir *] {
         puts "Deleting $b_dir"
