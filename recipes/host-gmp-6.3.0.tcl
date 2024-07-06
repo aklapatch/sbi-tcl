@@ -21,5 +21,3 @@ proc check {pkg_name inst_dir build_dir} {
 proc install {pkg_name inst_dir build_dir} {
     exec_stdout "make install"
 }
-
-

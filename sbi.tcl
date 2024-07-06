@@ -127,7 +127,9 @@ proc exec_stdout {exec_str} {
 
 proc autotools_build {dir cfg_flags make_flags} {
     cd $dir
+    puts "Using cfg flags: $cfg_flags"
     exec_stdout "./configure $cfg_flags"
+    puts "Using make flags $make_flags"
     exec_stdout "make $make_flags"
 }
 
@@ -309,25 +311,27 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     set run_install [proc_exists $src_path install]
     set run_check [proc_exists $src_path check]
 
+    set pkg_inst_dir [file join $inst_dir $short_name]
+
     set old_env [array get ::env]
     cd $tmp_build_dir
     if {$run_prep} {
         puts "Running prepare{}"
-        prepare $pkg_name $inst_dir $tmp_build_dir
+        prepare $pkg_name $pkg_inst_dir $tmp_build_dir
     }
     if {$run_build} {
         puts "Running build{}"
-        build [dict get $rep_info name] [dict get $rep_info ver] $inst_dir $tmp_build_dir
+        build [dict get $rep_info name] [dict get $rep_info ver] $pkg_inst_dir $tmp_build_dir
     }
     if {$run_check && $do_check} {
         puts "Running check{}"
-        check $short_name $inst_dir $tmp_build_dir
+        check $short_name $pkg_inst_dir $tmp_build_dir
     }
     if {$run_install} {
         puts "Running install{}"
-        install $short_name $inst_dir $tmp_build_dir
+        install $short_name $pkg_inst_dir $tmp_build_dir
     }
-    set inst_files [glob -nocomplain [file join $inst_dir *]]
+    set inst_files [glob -nocomplain -directory $inst_dir *]]
     if {[llength $inst_files] == 0} {
         error "This recipe didn't install any files!"
     }
