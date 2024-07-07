@@ -5,7 +5,17 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "https://www.lua.org/ftp/lua-$ver.tar.gz" \
-	cd_dest "$name-$ver" \
-	cfg_flags "--with-pic --enable-static" \
-	make_flags "-j 3" \
 ]
+
+proc build {name ver inst_dir build_dir} {
+    cd $name-$ver
+    exec_stdout "make all -j 3"
+}
+
+proc check {pkg_name inst_dir build_dir} {
+    exec_stdout "make test -j 3"
+}
+
+proc install {pkg_name inst_dir build_dir} {
+    exec_stdout "make install INSTALL_TOP=$inst_dir"
+}

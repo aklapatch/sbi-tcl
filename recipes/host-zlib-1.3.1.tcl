@@ -6,8 +6,26 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "https://zlib.net/fossils/zlib-$ver.tar.gz" \
-	cd_dest "$name-$ver" \
-	make_flags "-j 3" \
-	cfg_flags "--static" \
-	cflags "-fPIC" \
 ]
+
+proc build {name ver inst_dir build_dir} {
+    set cflags ""
+    if {[info exists ::env(CFLAGS)]} {
+        set clfags $::env(CFLAGS)
+    }
+    set ::env(CFLAGS) "$cflags -fPIC"
+    autotools_build \
+        "$name-$ver" \
+        "--prefix=$inst_dir --static --64" \
+        "-j 3"
+}
+
+proc check {pkg_name inst_dir build_dir} {
+    exec_stdout "make check -j 3"
+}
+
+proc install {pkg_name inst_dir build_dir} {
+    exec_stdout "make install"
+}
+
+
