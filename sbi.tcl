@@ -237,6 +237,22 @@ proc proc_exists {file name} {
     return [regexp "proc\\s+$name\\s+\{" $f_text]
 }
 
+# I just made up this hash function. It might not be any good.
+proc str_to_hash {str} {
+    set hash 2313
+    set mult 7873
+    set i 0
+    foreach char [split $str ""] {
+        incr i
+        set bin_char [scan $char %c]
+        set hash [expr $hash + $bin_char + $i]
+        set hash [expr $hash * $mult]
+        set hash [expr ($hash >> 7) ^ $hash]
+        set hash [expr $hash & 0xfffffff]
+    }
+    return $hash
+}
+
 proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	global rep_dir
 	set src_path [file join $rep_dir ${rep_path}.tcl]
@@ -306,6 +322,13 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     # Make sure the functions are up to date.
     # sourcing other file could override them
     source $src_path
+
+    # Get the hash for the recipe
+    set src_f [open $src_path r]
+    set src_text [read $src_f]
+    set src_hash [str_to_hash $src_text]
+    close $src_f
+
     set run_prep [proc_exists $src_path prepare]
     set run_build [proc_exists $src_path build]
     set run_install [proc_exists $src_path install]
@@ -335,6 +358,12 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     if {[llength $inst_files] == 0} {
         error "This recipe didn't install any files!"
     }
+
+    # Dump the hash to see if the recipe's changed later.
+    set hash_file [file join $pkg_inst_dir recipe-hash.txt]
+    set hash_file [open $hash_file w]
+    puts $hash_file $src_hash
+    close $hash_file
 
     array set ::env $old_env
 
