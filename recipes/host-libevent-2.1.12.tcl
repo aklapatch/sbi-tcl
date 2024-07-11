@@ -5,7 +5,19 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "https://github.com/libevent/libevent/releases/download/release-$ver-stable/libevent-$ver-stable.tar.gz" \
-	cd_dest "$name-$ver-stable" \
-    cfg_flags "--disable-openssl"\
-	make_flags "-j 2" \
 ]
+
+proc build {name ver inst_dir build_dir} {
+    autotools_build \
+        "${name}-$ver-stable" \
+        "--prefix=$inst_dir --disable-openssl" \
+        "-j 3"
+}
+
+proc check {pkg_name inst_dir build_dir} {
+    exec_stdout "make check -j 3"
+}
+
+proc install {pkg_name inst_dir build_dir} {
+    exec_stdout "make install"
+}
