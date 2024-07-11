@@ -265,6 +265,11 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
         error "$src_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
     }
     source $src_path
+    # Get the hash for the recipe
+    set src_f [open $src_path r]
+    set src_text [read $src_f]
+    set src_hash [str_to_hash $src_text]
+    close $src_f
 
 	# Assume data is in rep_info 
 	puts "Recipie info:"
@@ -323,11 +328,6 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     # sourcing other file could override them
     source $src_path
 
-    # Get the hash for the recipe
-    set src_f [open $src_path r]
-    set src_text [read $src_f]
-    set src_hash [str_to_hash $src_text]
-    close $src_f
 
     set run_prep [proc_exists $src_path prepare]
     set run_build [proc_exists $src_path build]
