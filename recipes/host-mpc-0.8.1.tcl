@@ -6,7 +6,7 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "https://www.multiprecision.org/downloads/$name-$ver.tar.gz" \
-	build_needs {host-gmp-4.3.2 host-mpfr-2.4.2} \
+	build_needs "host-gmp-4.3.2 host-mpfr-2.4.2" \
 ]
 
 proc build {name ver inst_dir build_dir} {

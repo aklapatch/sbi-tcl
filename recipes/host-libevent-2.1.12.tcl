@@ -10,7 +10,7 @@ set rep_info [dict create \
 proc build {name ver inst_dir build_dir} {
     autotools_build \
         "${name}-$ver-stable" \
-        "--prefix=$inst_dir --disable-openssl" \
+        "--prefix=$inst_dir --disable-openssl --disable-shared --with-pic" \
         "-j 3"
 }
 

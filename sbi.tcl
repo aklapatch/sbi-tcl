@@ -257,6 +257,7 @@ proc str_to_hash {str} {
     return $hash
 }
 
+# This function returns a list of recipes that are built or that it built in the process of building something.
 proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	global rep_dir
 	set src_path [file join $rep_dir ${rep_path}.tcl]
@@ -286,7 +287,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	set exp_path [file join $inst_dir $short_name]
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
-		return
+		return [list $short_name]
 	}
 	set srcs [dict get $rep_info srcs]
 	global src_dir
@@ -300,22 +301,19 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 		}
 	}
 
-    set path_adds ""
+    set built_pkgs [list]
 	# Build needed libraries
 	if {[dict exists $rep_info build_needs]} {
 		set b_needs [dict get $rep_info build_needs]
 		foreach need $b_needs {
 			set need_inst_dir [file join $inst_dir $need]
 			if {[file isdirectory $need_inst_dir] == 0} {
-				build_recipe $need 0 0 $do_check
-			} elseif {$rebuild_deps} {
-				build_recipe $need 1 1 $do_check
+				lappend built_pkgs [build_recipe $need 0 0 $do_check]
+            # Make sure we haven't built the package already if we're rebuilding deps
+			} elseif {$rebuild_deps && [lsearch $built_pkgs $need] == -1} {
+				lappend built_pkgs [build_recipe $need 1 1 $do_check]
 			}
-            set pkg_bin_dir [file join [get_pkg_dir $need] bin]
-            if {[file isdirectory $pkg_bin_dir]} {
-                set path_adds "$pkg_bin_dir:$path_adds"
-            }
-		}
+        }
 	}
 
 	global build_dir
@@ -342,7 +340,6 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     # sourcing other file could override them
     source $src_path
 
-
     set run_prep [proc_exists $src_path prepare]
     set run_build [proc_exists $src_path build]
     set run_install [proc_exists $src_path install]
@@ -352,8 +349,13 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 
     set old_env [array get ::env]
     # Add the build needs to the PATH
-    # TODO: get all the build needs from needed libraries another level down.
-    set ::env(PATH) "$path_adds$::env(PATH)"
+    foreach built_pkg $built_pkgs {
+        set pkg_bin_dir [file join [get_pkg_dir $built_pkg] bin]
+        if {[file isdirectory $pkg_bin_dir]} {
+            puts "Adding $pkg_bin_dir to build PATH"
+            set ::env(PATH) "$pkg_bin_dir:$::env(PATH)"
+        }
+    }
 
     cd $tmp_build_dir
     if {$run_prep} {
@@ -389,6 +391,8 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	file delete -force -- $tmp_build_dir
 
 	puts "\nInstalled $short_name"
+    lappend built_pkgs $short_name
+    return $built_pkgs
 }
 
 if {[llength $build_reps] > 0} {
