@@ -14,13 +14,12 @@ set rep_info [dict create \
 
 proc build {name ver inst_dir build_dir} {
     set src_folder_name "$name-$ver"
-    file rename $src_folder_name llvm
     file mkdir build
     cd build
     # Use ccache
     set ::env(CC) "ccache gcc"
     set ::env(CXX) "ccache g++"
-    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_WARNINGS=OFF ../llvm"
+    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_WARNINGS=OFF ../$src_folder_name"
     exec_stdout "ninja -j 3"
 }
 

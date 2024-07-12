@@ -321,7 +321,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     # Clear out the builds completely before extracting
     # This keeps the build folder somewhat empty
     # Don't to this because we can't run concurrent builds
-	#file delete -force -- [glob -nocomplain -directory $build_dir *]
+	file delete -force -- $tmp_build_dir
 	file mkdir $tmp_build_dir
 
 	# Excract source to build dir
@@ -354,6 +354,8 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
         if {[file isdirectory $pkg_bin_dir]} {
             puts "Adding $pkg_bin_dir to build PATH"
             set ::env(PATH) "$pkg_bin_dir:$::env(PATH)"
+        } else {
+            puts "$pkg_bin_dir does not exist"
         }
     }
 
