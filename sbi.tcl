@@ -313,7 +313,8 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	set tmp_build_dir [file join $build_dir $short_name]
     # Clear out the builds completely before extracting
     # This keeps the build folder somewhat empty
-	file delete -force -- [glob -nocomplain -directory $build_dir *]
+    # Don't to this because we can't run concurrent builds
+	#file delete -force -- [glob -nocomplain -directory $build_dir *]
 	file mkdir $tmp_build_dir
 
 	# Excract source to build dir
@@ -321,7 +322,11 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 		set src_name [file tail $src]
 		set save_path [file join $src_dir $src_name]
 		puts "Extracting $save_path to $tmp_build_dir"
-		exec >&@stdout tar -xf $save_path -C $tmp_build_dir
+        set cmd "tar -xf $save_path -C $tmp_build_dir"
+        if {[string match "*.zip" $save_path]} {
+            set cmd "unzip $save_path -d $tmp_build_dir"
+        }
+		exec >&@stdout {*}$cmd
 	}
 
     # Make sure the functions are up to date.
