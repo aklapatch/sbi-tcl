@@ -287,7 +287,9 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	set exp_path [file join $inst_dir $short_name]
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
-		return [list $short_name]
+        set ret [list $short_name]
+        puts "returning $ret"
+		return $ret
 	}
 	set srcs [dict get $rep_info srcs]
 	global src_dir
@@ -308,11 +310,14 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 		foreach need $b_needs {
 			set need_inst_dir [file join $inst_dir $need]
 			if {[file isdirectory $need_inst_dir] == 0} {
-				lappend built_pkgs [build_recipe $need 0 0 $do_check]
+				set pkgs [build_recipe $need 0 0 $do_check]
             # Make sure we haven't built the package already if we're rebuilding deps
 			} elseif {$rebuild_deps && [lsearch $built_pkgs $need] == -1} {
-				lappend built_pkgs [build_recipe $need 1 1 $do_check]
-			}
+				set pkgs [build_recipe $need 1 1 $do_check]
+			} else {
+                set pkgs [list $need]
+            }
+            lappend built_pkgs $pkgs
         }
 	}
 
@@ -349,6 +354,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 
     set old_env [array get ::env]
     # Add the build needs to the PATH
+    puts "Built these pkgs $built_pkgs"
     foreach built_pkg $built_pkgs {
         set pkg_bin_dir [file join [get_pkg_dir $built_pkg] bin]
         if {[file isdirectory $pkg_bin_dir]} {
