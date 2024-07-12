@@ -3,27 +3,27 @@ set name zapcc
 set plat host
 set ::cmake "$plat-cmake-3.30.0"
 set ::ninja "$plat-ninja-1.12.1"
-set ::ninja_dir [get_pkg_dir $::ninja]
-set ::ninja_exec [file join $::ninja_dir bin ninja]
+set ::ccache "$plat-ccache-3.7.12"
 set rep_info [dict create \
 	plat $plat \
 	name $name \
 	ver  $ver \
-    build_needs "$::cmake $::ninja" \
+    build_needs "$::cmake $::ninja $::ccache" \
 	srcs "https://github.com/yrnkrn/zapcc/archive/$ver.zip" \
 ]
 
 proc build {name ver inst_dir build_dir} {
-    set cmake_dir [get_pkg_dir $::cmake]
-    set cmake_exec [file join $cmake_dir bin cmake]
     set src_folder_name "$name-$ver"
     file rename $src_folder_name llvm
     file mkdir build
     cd build
-    exec_stdout "$cmake_exec -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_WARNINGS=OFF ../llvm"
-    exec_stdout "$::ninja_exec -j 3"
+    # Use ccache
+    set ::env(CC) "ccache gcc"
+    set ::env(CXX) "ccache g++"
+    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_WARNINGS=OFF ../llvm"
+    exec_stdout "ninja -j 3"
 }
 
 proc install {pkg_name inst_dir build_dir} {
-    exec_stdout "$::ninja_exec install -j 3"
+    exec_stdout "ninja install -j 3"
 }

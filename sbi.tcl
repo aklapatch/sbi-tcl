@@ -118,7 +118,11 @@ file mkdir $rep_dir
 
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
-	return [file join $inst_dir $pkg_name_ver]
+    set pkg_dir [file join $inst_dir $pkg_name_ver]
+    if {[file isdirectory $pkg_dir]} {
+        return $pkg_dir
+    }
+    error "Package folder $pkg_dir doesn't exist!"
 }
 
 proc exec_stdout {exec_str} {
@@ -296,6 +300,7 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 		}
 	}
 
+    set path_adds ""
 	# Build needed libraries
 	if {[dict exists $rep_info build_needs]} {
 		set b_needs [dict get $rep_info build_needs]
@@ -306,6 +311,10 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 			} elseif {$rebuild_deps} {
 				build_recipe $need 1 1 $do_check
 			}
+            set pkg_bin_dir [file join [get_pkg_dir $need] bin]
+            if {[file isdirectory $pkg_bin_dir]} {
+                set path_adds "$pkg_bin_dir:$path_adds"
+            }
 		}
 	}
 
@@ -342,6 +351,10 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
     set pkg_inst_dir [file join $inst_dir $short_name]
 
     set old_env [array get ::env]
+    # Add the build needs to the PATH
+    # TODO: get all the build needs from needed libraries another level down.
+    set ::env(PATH) "$path_adds$::env(PATH)"
+
     cd $tmp_build_dir
     if {$run_prep} {
         puts "Running prepare{}"
