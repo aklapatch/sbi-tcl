@@ -17,9 +17,7 @@ proc build {name ver inst_dir build_dir} {
     file mkdir build
     cd build
     # Use ccache
-    set ::env(CC) "ccache gcc"
-    set ::env(CXX) "ccache g++"
-    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_WARNINGS=OFF ../$src_folder_name"
+    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_TARGETS_TO_BUILD=x86_64 -DLLVM_CCACHE_BUILD=ON -DLLVM_ENABLE_WARNINGS=OFF ../$src_folder_name"
     exec_stdout "ninja -j 3"
 }
 
