@@ -16,7 +16,7 @@ proc build {name ver inst_dir build_dir} {
     file mkdir build
     cd build
     # Use ccache
-    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$inst_dir ../$src_folder_name"
+    exec_stdout "cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$inst_dir ../$src_folder_name"
     exec_stdout "ninja -j 3"
 }
 
