@@ -13,11 +13,14 @@ set rep_info [dict create \
 	srcs "https://github.com/Kitware/CMake/releases/download/v$ver/cmake-$ver.tar.gz" \
 ]
 
-# I tried using ninja but the build failed
 proc build {name ver inst_dir build_dir} {
     set openssl_dir [get_pkg_dir $::openssl]
     cd $name-$ver
-    exec_stdout "./bootstrap --prefix=$inst_dir --parallel=3 --generator=Ninja --no-system-libs CFLAGS=-pipe CXXFLAGS=-pipe --enable-ccache -- -DOPENSSL_ROOT_DIR=$openssl_dir -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=ninja"
+    set ncurses_dir [get_pkg_dir $::ncurses]
+    set ncurses_inc [file join $ncurses_dir include]
+    set ncurses_inc2 [file join $ncurses_inc ncursesw]
+    set ncurses_lib [file join $ncurses_dir lib libncursesw.a]
+    exec_stdout "./bootstrap --prefix=$inst_dir --parallel=3 --generator=Ninja --no-system-libs CFLAGS=-pipe CXXFLAGS=-pipe --enable-ccache -- -DOPENSSL_ROOT_DIR=$openssl_dir -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=ninja -DBUILD_CursesDialog=ON \"-DCURSES_INCLUDE_PATH=$ncurses_inc;$ncurses_inc2\" -DCURSES_LIBRARY=$ncurses_lib"
     exec_stdout "ninja -j 3"
 }
 
