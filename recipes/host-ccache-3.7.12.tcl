@@ -1,16 +1,17 @@
-set ver 1.2.5
-set name musl
+set ver 3.7.12
+set name ccache
+set plat host
 set rep_info [dict create \
-	plat "host" \
+	plat $plat \
 	name $name \
 	ver  $ver \
-	srcs "https://musl.libc.org/releases/$name-$ver.tar.gz" \
+	srcs "https://github.com/ccache/ccache/releases/download/v$ver/ccache-$ver.tar.gz" \
 ]
 
 proc build {name ver inst_dir build_dir} {
     autotools_build \
         "$name-$ver" \
-        "--prefix=$inst_dir --enable-static --enable-wrapper --with-pic --disable-shared" \
+        "--prefix=$inst_dir" \
         "-j 3"
 }
 

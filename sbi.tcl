@@ -52,6 +52,7 @@ proc get_arg_list {arg_list start_i} {
 
 set sbi_dir [file normalize [file join ~ .sbi]]
 set rm_old_builds 0
+set do_check 0
 
 for {set i 0} {$i < $argc} {incr i} {
 	set arg [lindex $argv $i]
@@ -59,6 +60,9 @@ for {set i 0} {$i < $argc} {incr i} {
         -h - 
         --help { 
             p_usage
+        }
+        --check { 
+            set do_check 1
         }
 		--build {
 			incr i
@@ -114,7 +118,23 @@ file mkdir $rep_dir
 
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
-	return [file join $inst_dir $pkg_name_ver]
+    set pkg_dir [file join $inst_dir $pkg_name_ver]
+    if {[file isdirectory $pkg_dir]} {
+        return $pkg_dir
+    }
+    error "Package folder $pkg_dir doesn't exist!"
+}
+
+proc exec_stdout {exec_str} {
+    exec >&@stdout {*}$exec_str
+}
+
+proc autotools_build {dir cfg_flags make_flags} {
+    cd $dir
+    puts "Using cfg flags: $cfg_flags"
+    exec_stdout "./configure $cfg_flags"
+    puts "Using make flags $make_flags"
+    exec_stdout "make $make_flags"
 }
 
 if {$rm_old_builds > 0} {
@@ -214,20 +234,48 @@ proc exec_log_cmd {cmd log_path} {
 	close $cmd_log
 }
 
+proc proc_exists {file name} {
+    set search_f [open $file r]
+    set f_text [read $search_f]
+    close $search_f
+    return [regexp "proc\\s+$name\\s+\{" $f_text]
+}
 
-proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
+# I just made up this hash function. It might not be any good.
+proc str_to_hash {str} {
+    set hash 2313
+    set mult 7873
+    set i 0
+    foreach char [split $str ""] {
+        incr i
+        set bin_char [scan $char %c]
+        set hash [expr $hash + $bin_char + $i]
+        set hash [expr $hash * $mult]
+        set hash [expr ($hash >> 7) ^ $hash]
+        set hash [expr $hash & 0xfffffff]
+    }
+    return $hash
+}
+
+# This function returns a list of recipes that are built or that it built in the process of building something.
+proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	global rep_dir
-	set import_path [file join $rep_dir ${rep_path}.tcl]
-	if {[file isfile $import_path]} {
-		puts "Sourcing imported recipe $import_path"
-		source $import_path
+	set src_path [file join $rep_dir ${rep_path}.tcl]
+	if {[file isfile $src_path]} {
+		puts "Sourcing imported recipe $src_path"
 	} else {
-		if {[file isfile $rep_path] == 0} {
-			error "$rep_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
-		}
-		# Build the recipe
-		source $rep_path
+		set src_path $rep_path
 	}
+    if {[file isfile $src_path] == 0} {
+        error "$src_path Isn't a file (or doesn't exist)!. You may need to import the recipe."
+    }
+    source $src_path
+    # Get the hash for the recipe
+    set src_f [open $src_path r]
+    set src_text [read $src_f]
+    set src_hash [str_to_hash $src_text]
+    close $src_f
+
 	# Assume data is in rep_info 
 	puts "Recipie info:"
 	dict for {k v} $rep_info {
@@ -239,7 +287,9 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 	set exp_path [file join $inst_dir $short_name]
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
-		return
+        set ret [list $short_name]
+        puts "returning $ret"
+		return $ret
 	}
 	set srcs [dict get $rep_info srcs]
 	global src_dir
@@ -253,24 +303,30 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		}
 	}
 
+    set built_pkgs [list]
 	# Build needed libraries
 	if {[dict exists $rep_info build_needs]} {
 		set b_needs [dict get $rep_info build_needs]
 		foreach need $b_needs {
 			set need_inst_dir [file join $inst_dir $need]
 			if {[file isdirectory $need_inst_dir] == 0} {
-				build_recipe $need
-			} elseif {$rebuild_deps} {
-				build_recipe $need 1 1
-			}
-		}
+				set pkgs [build_recipe $need 0 0 $do_check]
+            # Make sure we haven't built the package already if we're rebuilding deps
+			} elseif {$rebuild_deps && [lsearch $built_pkgs $need] == -1} {
+				set pkgs [build_recipe $need 1 1 $do_check]
+			} else {
+                set pkgs [list $need]
+            }
+            lappend built_pkgs $pkgs
+        }
 	}
 
 	global build_dir
 	set tmp_build_dir [file join $build_dir $short_name]
     # Clear out the builds completely before extracting
     # This keeps the build folder somewhat empty
-	file delete -force -- [glob -nocomplain -directory $build_dir *]
+    # Don't to this because we can't run concurrent builds
+	file delete -force -- $tmp_build_dir
 	file mkdir $tmp_build_dir
 
 	# Excract source to build dir
@@ -278,105 +334,73 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0}} {
 		set src_name [file tail $src]
 		set save_path [file join $src_dir $src_name]
 		puts "Extracting $save_path to $tmp_build_dir"
-		exec >&@stdout tar -xf $save_path -C $tmp_build_dir
+        set cmd "tar -xf $save_path -C $tmp_build_dir"
+        if {[string match "*.zip" $save_path]} {
+            set cmd "unzip $save_path -d $tmp_build_dir"
+        }
+		exec >&@stdout {*}$cmd
 	}
 
-    # Add a member to the PATH if necessary
-    set old_path $::env(PATH)
-    if {[dict exists $rep_info paths]} {
-        set path_add [dict get $rep_info paths]
-        puts "Adding '$path_add' to your PATH"
-        set ::env(PATH) "$path_add:$::env(PATH)"
-    }
-    # Add a member to the CFLAGS env if necessary
-    set old_cflags ""
-    if {[info exists ::env(CFLAGS)]} {
-        set old_cflags $::env(CFLAGS)
-    }
-    if {[dict exists $rep_info cflags]} {
-        set cflags_add [dict get $rep_info cflags]
-        puts "Adding '$cflags_add' to your CFLAGS"
-        if {[string length $old_cflags] == 0} {
-            set ::env(CFLAGS) "$cflags_add"
+    # Make sure the functions are up to date.
+    # sourcing other file could override them
+    source $src_path
+
+    set run_prep [proc_exists $src_path prepare]
+    set run_build [proc_exists $src_path build]
+    set run_install [proc_exists $src_path install]
+    set run_check [proc_exists $src_path check]
+
+    set pkg_inst_dir [file join $inst_dir $short_name]
+
+    set old_env [array get ::env]
+    # Add the build needs to the PATH
+    puts "Built these pkgs $built_pkgs"
+    foreach built_pkg $built_pkgs {
+        set pkg_bin_dir [file join [get_pkg_dir $built_pkg] bin]
+        if {[file isdirectory $pkg_bin_dir]} {
+            puts "Adding $pkg_bin_dir to build PATH"
+            set ::env(PATH) "$pkg_bin_dir:$::env(PATH)"
         } else {
-            set ::env(CFLAGS) "$cflags_add:$old_cflags"
+            puts "$pkg_bin_dir does not exist"
         }
     }
 
-	# Configure the build
-	global inst_dir
-	set pkg_inst_dir [file join $inst_dir $short_name]
     cd $tmp_build_dir
-    if {[dict exists $rep_info pre_cfg_proc]} {
-        set _pre_cfg_proc [dict get $rep_info pre_cfg_proc]
-		puts "Running custom pre-config function $_pre_cfg_proc"
-		{*}$_pre_cfg_proc $short_name $pkg_inst_dir $tmp_build_dir
+    if {$run_prep} {
+        puts "Running prepare{}"
+        prepare $pkg_name $pkg_inst_dir $tmp_build_dir
     }
-	if {[dict exists $rep_info cfg_proc]} {
-		set proc_name [dict get $rep_info cfg_proc]
-		# Run the cofiguration proc
-		# This proc should end in the dir where 'make' should be run
-		# It will start in the temporary build folder
-		puts "Running custom build function $proc_name"
-		{*}$proc_name $short_name $pkg_inst_dir $tmp_build_dir
-	} else {
-		set cfg_prefix "."
-		set cfg_dir [file join $tmp_build_dir [dict get $rep_info cd_dest]]
-		if {[dict exists $rep_info cfg_type]} {
-			set cfg_type [dict get $rep_info cfg_type]
-			if {[string compare $cfg_type "at-new-dir"] == 0} {
-				set new_cfg_dir [file join $tmp_build_dir "$short_name-build"]
-				file mkdir $new_cfg_dir
-				cd $new_cfg_dir
-				set cfg_prefix "../[dict get $rep_info cd_dest]"
-			
-			} else {
-				error "Bad configuration type '$cfg_type'!"
-			}
-		} else {
-			cd $cfg_dir
-		}
-		# This needs to go after other recipies are built, otherwise the variables could
-		# carry into function calls that they didn't apply to.
-		set cfg_flags ""
-		if {[dict exists $rep_info cfg_flags]} {
-			set cfg_flags [dict get $rep_info cfg_flags]
-			puts "Using cfg flags '$cfg_flags'"
-		}
-		set cfg_log [file join $tmp_build_dir cfg-log.txt]
-		set cfg_cmd "$cfg_prefix/configure $cfg_flags --prefix=$pkg_inst_dir"
-        if {[dict exists $rep_info cfg_cmd]} {
-            set new_cfg_cmd [dict get $rep_info cfg_cmd]
-            set cfg_cmd "$cfg_prefix/$new_cfg_cmd $cfg_flags --prefix=$pkg_inst_dir"
-        }
-		exec_log_cmd $cfg_cmd $cfg_log
-	}
+    if {$run_build} {
+        puts "Running build{}"
+        build [dict get $rep_info name] [dict get $rep_info ver] $pkg_inst_dir $tmp_build_dir
+    }
+    if {$run_check && $do_check} {
+        puts "Running check{}"
+        check $short_name $pkg_inst_dir $tmp_build_dir
+    }
+    if {$run_install} {
+        puts "Running install{}"
+        install $short_name $pkg_inst_dir $tmp_build_dir
+    }
+    set inst_files [glob -nocomplain -directory $inst_dir *]]
+    if {[llength $inst_files] == 0} {
+        error "This recipe didn't install any files!"
+    }
 
-	set make_flags ""
-	if {[dict exists $rep_info make_flags]} {
-		set make_flags " [dict get $rep_info make_flags]"
-		puts "Using make flags '$make_flags'"
-	}
-	# Make it
-	set make_log [file join $tmp_build_dir make-log.txt]
-	exec_log_cmd "make$make_flags" $make_log
+    # Dump the hash to see if the recipe's changed later.
+    set hash_file [file join $pkg_inst_dir recipe-hash.txt]
+    set hash_file [open $hash_file w]
+    puts $hash_file $src_hash
+    close $hash_file
 
-	# TODO: move an existing install folder to a tmpdir, then delete it if the install fails.
-
-	# Install it.
-	set install_log [file join $tmp_build_dir install-log.txt]
-	exec_log_cmd "make install" $install_log
-
-    # Reset the path for the next build
-    set ::env(PATH) $old_path
-
-    # Reset the flags for the next build
-    set ::env(CFLAGS) $old_cflags
+    array set ::env $old_env
 
 	# TODO: Delete the install dir if the install fails
 	file delete -force -- $tmp_build_dir
 
 	puts "\nInstalled $short_name"
+    lappend built_pkgs $short_name
+    return $built_pkgs
 }
 
 if {[llength $build_reps] > 0} {
@@ -399,6 +423,6 @@ if {[llength $build_reps] > 0} {
 	}
 	foreach b_rep $abs_build_reps {
 		puts "Building $b_rep"
-		build_recipe $b_rep $rebuild $rebuild_deps
+		build_recipe $b_rep $rebuild $rebuild_deps $do_check
 	}
 }

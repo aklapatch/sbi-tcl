@@ -5,7 +5,21 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "https://ftp.gnu.org/gnu/$name/$name-$ver.tar.gz" \
-	cd_dest "$name-$ver" \
-	cfg_flags "--disable-shared CFLAGS=-fPIC" \
-	make_flags "-j 3" \
 ]
+
+proc build {name ver inst_dir build_dir} {
+    autotools_build \
+        "$name-$ver" \
+        "--prefix=$inst_dir --with-pic --enable-static --disable-shared" \
+        "-j 3"
+}
+
+proc check {pkg_name inst_dir build_dir} {
+    exec_stdout "make check -j 3"
+}
+
+proc install {pkg_name inst_dir build_dir} {
+    exec_stdout "make install"
+}
+
+

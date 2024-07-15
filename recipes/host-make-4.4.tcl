@@ -1,16 +1,16 @@
-set ver 1.2.5
-set name musl
+set ver 4.4
+set name make
 set rep_info [dict create \
 	plat "host" \
 	name $name \
 	ver  $ver \
-	srcs "https://musl.libc.org/releases/$name-$ver.tar.gz" \
+	srcs "https://ftp.gnu.org/gnu/make/make-$ver.tar.gz" \
 ]
 
 proc build {name ver inst_dir build_dir} {
     autotools_build \
         "$name-$ver" \
-        "--prefix=$inst_dir --enable-static --enable-wrapper --with-pic --disable-shared" \
+        "--prefix=$inst_dir " \
         "-j 3"
 }
 
