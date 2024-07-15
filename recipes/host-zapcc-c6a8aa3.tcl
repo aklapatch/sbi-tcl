@@ -1,4 +1,5 @@
-set ver c6a8aa30006d997eff0d60fd37b0e62b8aa0ea50
+set ::full_ver c6a8aa30006d997eff0d60fd37b0e62b8aa0ea50
+set ver c6a8aa
 set name zapcc
 set plat host
 set ::cmake "$plat-cmake-3.30.0"
@@ -10,11 +11,11 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
     build_needs "$::cmake $::ninja $::ccache $::python" \
-	srcs "https://github.com/yrnkrn/zapcc/archive/$ver.zip" \
+	srcs "https://github.com/yrnkrn/zapcc/archive/$::full_ver.zip" \
 ]
 
 proc build {name ver inst_dir build_dir} {
-    set src_folder_name "$name-$ver"
+    set src_folder_name "$name-$::full_ver"
     file mkdir build
     cd build
     # Use ccache
