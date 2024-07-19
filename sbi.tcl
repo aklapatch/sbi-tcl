@@ -288,7 +288,6 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
         set ret [list $short_name]
-        puts "returning $ret"
 		return $ret
 	}
 	set srcs [dict get $rep_info srcs]
