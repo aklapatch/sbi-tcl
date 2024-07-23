@@ -16,15 +16,13 @@ set rep_info [dict create \
 ]
 
 proc build {name ver inst_dir build_dir} {
-    set src_folder_name "$name-$ver.src"
-    file mkdir build
-    cd build
+    cd "$name-$ver.src"
     # Use ccache
-    set cap_dir [file join [get_pkg_dir $::cap] lib pkgconfig]
+    set zstd_dir [file join [get_pkg_dir $::zstd] lib pkgconfig]
     set zlib_dir [file join [get_pkg_dir $::zlib] lib pkgconfig]
-    set ::env(PKG_CONFIG_PATH) "$cap_dir:$zlib_dir"
-    exec_stdout "cmake -G Ninja -Dstaticlibs=ON -Ddisable32bit=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$inst_dir ../$src_folder_name"
-    exec_stdout "ninja -j 3"
+    set ::env(PKG_CONFIG_PATH) "$zstd_dir:$zlib_dir"
+    exec_stdout "cmake -S llvm -B build -G Ninja -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lld;lldb -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_CCACHE_BUILD=ON -DLLVM_ENABLE_WARNINGS=OFF -DCMAKE_INSTALL_PREFIX=$inst_dir"
+    exec_stdout "ninja -C llvm -j 3"
 }
 
 proc check {pkg_name inst_dir build_dir} {
@@ -32,5 +30,5 @@ proc check {pkg_name inst_dir build_dir} {
 }
 
 proc install {pkg_name inst_dir build_dir} {
-    exec_stdout "ninja install"
+    exec_stdout "ninja -j 3 install"
 }
