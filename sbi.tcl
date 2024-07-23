@@ -118,11 +118,7 @@ file mkdir $rep_dir
 
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
-    set pkg_dir [file join $inst_dir $pkg_name_ver]
-    if {[file isdirectory $pkg_dir]} {
-        return $pkg_dir
-    }
-    error "Package folder $pkg_dir doesn't exist!"
+    return [file join $inst_dir $pkg_name_ver]
 }
 
 proc exec_stdout {exec_str} {
