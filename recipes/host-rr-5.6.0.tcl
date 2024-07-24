@@ -1,4 +1,4 @@
-set ver 5.8.0
+set ver 5.6.0
 set name rr
 set plat host
 set ::cmake "$plat-cmake-3.30.0"
@@ -17,6 +17,7 @@ set rep_info [dict create \
 ]
 
 proc build {name ver inst_dir build_dir} {
+    puts "WARNING: This does not build on musl systems!"
     set src_folder_name "$name-$ver"
     # Use ccache
     set cap_dir [file join [get_pkg_dir $::cap] lib pkgconfig]
