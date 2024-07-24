@@ -21,7 +21,7 @@ proc build {name ver inst_dir build_dir} {
     set zstd_dir [file join [get_pkg_dir $::zstd] lib pkgconfig]
     set zlib_dir [file join [get_pkg_dir $::zlib] lib pkgconfig]
     set ::env(PKG_CONFIG_PATH) "$zstd_dir:$zlib_dir"
-    exec_stdout "cmake -S llvm -B build -G Ninja -DLLVM_PARALLEL_COMPILE_JOBS=2 -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lld;lldb -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_CCACHE_BUILD=ON -DLLVM_ENABLE_WARNINGS=OFF -DCMAKE_INSTALL_PREFIX=$inst_dir"
+    exec_stdout "cmake -S llvm -B build -G Ninja -DLLVM_PARALLEL_COMPILE_JOBS=2 -DLLVM_PARALLEL_LINK_JOBS=2 -DLLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lld;lldb -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_CCACHE_BUILD=ON -DLLVM_ENABLE_WARNINGS=OFF -DCMAKE_INSTALL_PREFIX=$inst_dir"
     exec_stdout "ninja -C build -j 3"
 }
 
