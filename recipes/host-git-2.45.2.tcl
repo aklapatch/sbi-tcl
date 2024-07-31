@@ -5,12 +5,13 @@ set ::openssl "$plat-openssl-1.1.1w"
 set ::zlib "$plat-zlib-1.3.1"
 set ::asciidoc "$plat-asciidoc-10.2.1"
 set ::python "$plat-python-3.12.4"
+set ::perl "$plat-perl-5.40.0"
 set rep_info [dict create \
 	plat $plat \
 	name $name \
 	ver  $ver \
 	srcs "https://github.com/git/git/archive/refs/tags/v$ver.tar.gz" \
-    build_needs "$::openssl $::zlib $::asciidoc $::python" \
+    build_needs "$::openssl $::zlib $::asciidoc $::python $::perl" \
 ]
 
 proc build {name ver inst_dir build_dir} {
@@ -19,7 +20,8 @@ proc build {name ver inst_dir build_dir} {
     set ssl_dir [get_pkg_dir $::openssl]
     set zlib_dir [get_pkg_dir $::zlib]
     set py_dir [get_pkg_dir $::python]
-    exec_stdout "./configure --prefix=$inst_dir --with-zlib=$zlib_dir \"CFLAGS=-I$ssl_dir/include -I$zlib_dir/include\" \"LIBS=$ssl_dir/lib/libssl.a $zlib_dir/lib/libz.a\" --with-python=$py_dir/bin"
+    set perl_dir [get_pkg_dir $::perl]
+    exec_stdout "./configure --prefix=$inst_dir --with-zlib=$zlib_dir \"CFLAGS=-I$ssl_dir/include -I$zlib_dir/include\" --with-perl=$perl_dir/bin/perl \"LIBS=$ssl_dir/lib/libssl.a $zlib_dir/lib/libz.a\" --with-python=$py_dir/bin/python3"
     exec_stdout "make -j 3"
 
 }
