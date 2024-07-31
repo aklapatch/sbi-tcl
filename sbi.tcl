@@ -118,11 +118,7 @@ file mkdir $rep_dir
 
 proc get_pkg_dir {pkg_name_ver} {
 	global inst_dir
-    set pkg_dir [file join $inst_dir $pkg_name_ver]
-    if {[file isdirectory $pkg_dir]} {
-        return $pkg_dir
-    }
-    error "Package folder $pkg_dir doesn't exist!"
+    return [file join $inst_dir $pkg_name_ver]
 }
 
 proc exec_stdout {exec_str} {
@@ -288,7 +284,6 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 	if {[file isdirectory $exp_path] && $rebuild == 0} {
 		puts "$short_name is installed, skipping build"
         set ret [list $short_name]
-        puts "returning $ret"
 		return $ret
 	}
 	set srcs [dict get $rep_info srcs]
