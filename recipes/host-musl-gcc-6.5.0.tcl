@@ -13,7 +13,7 @@ set rep_info [dict create \
 	name $name \
 	ver  $ver \
 	srcs "$url/$name/$name-$ver/$name-$ver.tar.gz" \
-	build_needs "$musl_ver host-make-4.4 host-autoconf-2.72e host-isl-0.15 host-gmp-4.3.2 host-mpc-0.8.1 host-mpfr-2.4.2" \
+	build_needs "$::musl_ver host-make-4.4 host-autoconf-2.72e host-isl-0.15 host-gmp-4.3.2 host-mpc-0.8.1 host-mpfr-2.4.2" \
 	make_flags "-j 3" \
 ]
 
