@@ -192,7 +192,7 @@ if {[llength $rem_reps] > 0} {
 	foreach r_rep $rem_reps {
 		if {[string compare $r_rep "all"] == 0} {
 			# Delete everything
-			set all_folders [glob -directory $inst_dir *]
+			set all_folders [glob -nocomplain -directory $inst_dir *]
 			foreach folder $all_folders {
 				puts "Deleting $folder"
 				file delete -force -- $folder

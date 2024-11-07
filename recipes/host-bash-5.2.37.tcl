@@ -1,17 +1,16 @@
-set ver 2.72e
-set name autoconf
+set ver 5.2.37
+set name bash
 set rep_info [dict create \
 	plat "host" \
 	name $name \
 	ver  $ver \
-	srcs "https://alpha.gnu.org/pub/gnu/autoconf/$name-$ver.tar.gz" \
-	build_needs "host-m4-1.4.19 host-perl-5.40.0 host-make-4.4"
+	srcs "https://ftp.gnu.org/gnu/bash/bash-$ver.tar.gz" \
 ]
 
 proc build {name ver inst_dir build_dir} {
     autotools_build \
         "$name-$ver" \
-        "--prefix=$inst_dir " \
+        "--prefix=$inst_dir --enable-readline --enable-static-link" \
         "-j 3"
 }
 
