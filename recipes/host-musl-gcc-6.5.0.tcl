@@ -26,8 +26,8 @@ proc build {name ver inst_dir build_dir} {
     set mpc_dir [get_pkg_dir host-mpc-0.8.1]
     set isl_dir [get_pkg_dir host-isl-0.15]
     set musl_dir [get_pkg_dir $::musl_ver]
-    set cflags "-pipe -g0 -I$musl_dir/include -L$musl_dir/lib"
-    exec_stdout "../$name-$ver/configure --prefix=$inst_dir \"CFLAGS=$cflags\" \"CXXFLAGS=$cflags\" --disable-host-shared --disable-libquadmath --target=$arch-pc-linux-musl --host=$arch-pc-linux-musl --build=$arch-pc-linux-musl --with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-libsanitizer --disable-libgomp --disable-multilib --with-mpc=$mpc_dir --enable-languages=c,c++,lto --enable-lto --disable-bootstrap"
+    set cflags "-pipe -g0 -fno-stack-protector"
+    exec_stdout "../$name-$ver/configure CC=$musl_dir/bin/musl-gcc --prefix=$inst_dir \"CFLAGS=$cflags\" \"CXXFLAGS=$cflags\" --disable-host-shared --disable-libquadmath --target=$arch-pc-linux-musl --host=$arch-pc-linux-musl --build=$arch-pc-linux-musl --with-isl=$isl_dir --with-gmp=$gmp_dir --with-mpfr=$mpfr_dir --disable-libsanitizer --disable-libgomp --disable-multilib --with-mpc=$mpc_dir --enable-languages=c,c++,lto --enable-lto --disable-bootstrap"
 
     exec_stdout "make -j 3"
 }
