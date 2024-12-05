@@ -347,7 +347,9 @@ proc build_recipe {rep_path {rebuild 0} {rebuild_deps 0} {do_check 0}} {
 			} else {
 				set pkgs [list $need]
 			}
-			lappend built_pkgs $pkgs
+            foreach pkg $pkgs {
+                lappend built_pkgs $pkg
+            }
 		}
 	}
 	puts "Built/have $built_pkgs for $short_name"
