@@ -1,9 +1,11 @@
 set ver host
 set name kernel-headers
+set ::rsync "host-rsync-3.3.0"
 set rep_info [dict create \
 	plat "host" \
 	name $name \
 	ver  $ver \
+    build_needs "$::rsync"
 ]
 # example URL: https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.11.7.tar.xz
 proc install {pkg_name inst_dir build_dir} {
